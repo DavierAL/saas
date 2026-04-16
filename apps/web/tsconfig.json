@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "paths": {
+      "@saas-pos/domain": ["../../packages/domain/src"],
+      "@saas-pos/application": ["../../packages/application/src"],
+      "@saas-pos/utils": ["../../packages/utils/src"]
+    }
+  },
+  "include": ["src", "vite-env.d.ts"],
+  "references": [
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/application" },
+    { "path": "../../packages/utils" }
+  ]
+}

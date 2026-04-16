@@ -1,0 +1,68 @@
+# ============================================================
+# PowerSync Sync Rules
+# Docs: https://docs.powersync.com/sync-rules/overview
+#
+# Strategy:
+#   - Every client only downloads data for their tenant.
+#   - The `user_parameters` bag contains the tenant_id injected
+#     by Supabase Auth (via JWT claim 'tenant_id').
+#   - Conflict resolution: last-write-wins (PowerSync default).
+# ============================================================
+
+bucket_definitions:
+  # ─────────────────────────────────────────────────────────
+  # Global bucket: one per tenant
+  # Each connected device gets exactly one bucket — their tenant.
+  # ─────────────────────────────────────────────────────────
+  tenant_bucket:
+    # The parameter comes from the JWT decoded by PowerSync.
+    # Supabase injects tenant_id into app_metadata → available here.
+    parameters: SELECT request.user_id() AS user_id, request.jwt() ->> 'tenant_id' AS tenant_id
+
+    data:
+      # Tenant record itself
+      - SELECT id, name, industry_type, modules_config, valid_until,
+               created_at, updated_at, deleted_at
+        FROM public.tenants
+        WHERE id::TEXT = bucket.tenant_id
+
+      # Users of this tenant
+      - SELECT id, tenant_id, email, role,
+               created_at, updated_at, deleted_at
+        FROM public.users
+        WHERE tenant_id::TEXT = bucket.tenant_id
+        -- NOTE: password_hash intentionally excluded from sync
+
+      # Items (products + services)
+      - SELECT id, tenant_id, type, name, price, stock,
+               created_at, updated_at, deleted_at
+        FROM public.items
+        WHERE tenant_id::TEXT = bucket.tenant_id
+          AND deleted_at IS NULL
+
+      # Orders (last 30 days for performance)
+      - SELECT id, tenant_id, user_id, status, total_amount,
+               created_at, updated_at, deleted_at
+        FROM public.orders
+        WHERE tenant_id::TEXT = bucket.tenant_id
+          AND created_at > now() - INTERVAL '30 days'
+
+      # Order lines (only for orders in the window above)
+      - SELECT ol.id, ol.order_id, ol.item_id, ol.quantity,
+               ol.unit_price, ol.subtotal, ol.tenant_id
+        FROM public.order_lines ol
+        JOIN public.orders o ON o.id = ol.order_id
+        WHERE ol.tenant_id::TEXT = bucket.tenant_id
+          AND o.created_at > now() - INTERVAL '30 days'
+
+      # Restaurant tables (conditional on module, but always synced —
+      # the app checks modules_config before displaying)
+      - SELECT id, tenant_id, table_number, status
+        FROM public.tables_restaurant
+        WHERE tenant_id::TEXT = bucket.tenant_id
+
+      # Appointments
+      - SELECT id, tenant_id, customer_name, item_id, start_time, status
+        FROM public.appointments
+        WHERE tenant_id::TEXT = bucket.tenant_id
+          AND start_time > now() - INTERVAL '7 days'

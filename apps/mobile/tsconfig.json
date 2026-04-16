@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@saas-pos/domain": ["../../packages/domain/src"],
+      "@saas-pos/application": ["../../packages/application/src"],
+      "@saas-pos/db": ["../../packages/db/src"],
+      "@saas-pos/sync": ["../../packages/sync/src"],
+      "@saas-pos/utils": ["../../packages/utils/src"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../../packages/*/src/**/*.ts"]
+}
