@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "scheme": "saas-pos",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saaspos.app"

@@ -12,13 +12,13 @@ function CartItemRow({ item_id, name, unit_price, quantity }: {
 }) {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
-  const subtotal = createMoney(unit_price * quantity);
+  const subtotal = createMoney(unit_price * quantity, 'PEN');
 
   return (
     <View style={s.cartRow}>
       <View style={s.cartInfo}>
         <Text style={s.cartName} numberOfLines={1}>{name}</Text>
-        <Text style={s.cartUnitPrice}>{formatMoney(createMoney(unit_price))} c/u</Text>
+        <Text style={s.cartUnitPrice}>{formatMoney(createMoney(unit_price, 'PEN'))} c/u</Text>
       </View>
       <View style={s.cartQty}>
         <Pressable style={s.qtyBtn} onPress={() => updateQuantity(item_id, quantity - 1)}>
@@ -76,7 +76,7 @@ export default function CartScreen() {
               )}
               <View style={s.totalRow}>
                 <Text style={s.totalLabel}>Total</Text>
-                <Text style={s.totalValue}>{formatMoney(createMoney(total))}</Text>
+                <Text style={s.totalValue}>{formatMoney(createMoney(total, 'PEN'))}</Text>
               </View>
               <Pressable
                 style={({ pressed }) => [s.checkoutBtn, pressed && s.checkoutBtnPressed, state === 'processing' && s.checkoutBtnDisabled]}
@@ -86,7 +86,7 @@ export default function CartScreen() {
                 {state === 'processing' ? (
                   <ActivityIndicator color="#0f0f0f" />
                 ) : (
-                  <Text style={s.checkoutBtnText}>Cobrar · {formatMoney(createMoney(total))}</Text>
+                  <Text style={s.checkoutBtnText}>Cobrar · {formatMoney(createMoney(total, 'PEN'))}</Text>
                 )}
               </Pressable>
               <Pressable onPress={clearCart} style={s.clearBtn}>

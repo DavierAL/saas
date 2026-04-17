@@ -24,7 +24,7 @@ interface RawItemRow {
 }
 
 export const useItems = (tenantId: string): Item[] => {
-  const { data } = usePowerSyncQuery<RawItemRow>(
+  const data = usePowerSyncQuery<RawItemRow>(
     `SELECT id, tenant_id, type, name, price, stock,
             created_at, updated_at, deleted_at
      FROM items
@@ -34,7 +34,7 @@ export const useItems = (tenantId: string): Item[] => {
     [tenantId],
   );
 
-  return (data ?? []).map((row) => ({
+  return (data || []).map((row) => ({
     id: row.id,
     tenant_id: row.tenant_id,
     type: row.type as Item['type'],

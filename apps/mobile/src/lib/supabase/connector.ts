@@ -79,10 +79,10 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
           }
 
           case UpdateType.DELETE: {
-            // Use soft delete: set deleted_at instead of hard delete
+            // Use soft delete: set deleted_at with magic value (signaling DB trigger to use now())
             const { error } = await supabase
               .from(table)
-              .update({ deleted_at: new Date().toISOString() })
+              .update({ deleted_at: '1970-01-01T00:00:00Z' })
               .eq('id', id);
             if (error) throw error;
             break;

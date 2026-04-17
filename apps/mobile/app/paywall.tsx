@@ -6,15 +6,54 @@
  * The checkout use case already enforces this — this screen is the UI response.
  */
 import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
-import { useAuth } from '../src/providers/AppProvider';
 import { useTenant } from '../src/hooks/useTenant';
 import { getSubscriptionStatus } from '@saas-pos/domain';
+import { useEffect, useState } from 'react';
+import { supabase } from '../src/lib/supabase/client';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../src/providers/AppProvider';
 
 export default function PaywallScreen() {
   const { tenantId, signOut } = useAuth();
+  const router = useRouter();
   const tenant = useTenant(tenantId ?? '');
+  const [isVerifying, setIsVerifying] = useState(false);
+  
   const status = tenant ? getSubscriptionStatus(tenant) : null;
   const expiredDays = status ? Math.abs(status.daysRemaining) : 0;
+
+  // [AUTH-010] Hardened Server-side Check
+  // Prevents local device clock manipulation from bypassing the lock indefinitely
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const verifySubscription = async () => {
+      setIsVerifying(true);
+      try {
+        const { data, error } = await supabase
+          .from('tenants')
+          .select('valid_until')
+          .eq('id', tenantId)
+          .single();
+
+        if (data && !error) {
+          const now = new Date();
+          const validUntil = new Date(data.valid_until);
+          
+          if (validUntil > now) {
+            console.log('[Paywall] Server says subscription is actually valid. Redirecting...');
+            router.replace('/(tabs)');
+          }
+        }
+      } catch (err) {
+        console.warn('[Paywall] Server check failed:', err);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifySubscription();
+  }, [tenantId]);
 
   return (
     <View style={s.container}>

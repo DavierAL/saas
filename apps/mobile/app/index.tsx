@@ -11,6 +11,7 @@
  */
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+const AnyFlashList = FlashList as any;
 import { Stack } from 'expo-router';
 import { useAuth } from '../src/providers/AppProvider';
 import { useItems } from '../src/hooks/useItems';
@@ -41,7 +42,7 @@ function SyncBadge() {
       <Text style={[styles.badgeText, { color: colors[status] }]}>
         {labels[status]}
       </Text>
-      {\!hasSynced && status === 'connected' && (
+      {!hasSynced && status === 'connected' && (
         <ActivityIndicator size="small" color={colors[status]} style={{ marginLeft: 6 }} />
       )}
     </View>
@@ -50,7 +51,7 @@ function SyncBadge() {
 
 // ─── Item Card ────────────────────────────────────────────────
 function ItemCard({ item }: { item: Item }) {
-  const price = createMoney(item.price);
+  const price = createMoney(item.price, 'PEN');
   const isProduct = item.type === 'product';
 
   return (
@@ -69,7 +70,7 @@ function ItemCard({ item }: { item: Item }) {
         </View>
         <View style={styles.itemNameContainer}>
           <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-          {item.stock \!== null && (
+          {item.stock !== null && (
             <Text style={styles.itemStock}>Stock: {item.stock} unidades</Text>
           )}
         </View>
@@ -137,11 +138,11 @@ export default function HomeScreen() {
         </View>
 
         {/* Catalog list — FlashList for 60fps */}
-        <FlashList
-          data={items}
-          keyExtractor={(item) => item.id}
+        <AnyFlashList
+          data={items as any}
+          keyExtractor={(item: any) => item.id}
           estimatedItemSize={72}
-          renderItem={({ item }) => <ItemCard item={item} />}
+          renderItem={({ item }: any) => <ItemCard item={item} />}
           ListEmptyComponent={<EmptyState hasSynced={hasSynced} />}
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}

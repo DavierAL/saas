@@ -31,29 +31,30 @@ export const useCheckout = () => {
     setState('processing');
     setError(null);
 
-    const result = await checkout(
-      {
-        tenant_id: tenantId,
-        user_id: 'demo-user-id',  // Phase 3 will use real auth user
-        lines: cart.items.map((item) => ({
-          item_id:    item.item_id,
-          quantity:   item.quantity,
-          unit_price: item.unit_price,
-        })),
-      },
-      {
-        orderRepo:  new SqliteOrderRepository(db),
-        itemRepo:   new SqliteItemRepository(db),
-        tenantRepo: new SqliteTenantRepository(db),
-      },
-    );
+    try {
+      const order = await checkout(
+        {
+          tenant_id: tenantId,
+          user_id: 'demo-user-id',  // Phase 3 will use real auth user
+          currency:   'PEN', // [DOM-008] Phase 4 will use tenant.currency
+          lines: cart.items.map((item) => ({
+            item_id:    item.item_id,
+            quantity:   item.quantity,
+            unit_price: item.unit_price,
+          })),
+        },
+        {
+          orderRepo:  new SqliteOrderRepository(db as any),
+          itemRepo:   new SqliteItemRepository(db as any),
+          tenantRepo: new SqliteTenantRepository(db as any),
+        },
+      );
 
-    if (result.success) {
-      setLastOrder(result.order);
+      setLastOrder(order);
       cart.clearCart();
       setState('success');
-    } else {
-      setError(result.reason);
+    } catch (err: any) {
+      setError(err.message || 'Error desconocido al procesar el pago');
       setState('error');
     }
   }, [db, tenantId, cart]);
