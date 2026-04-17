@@ -1,0 +1,119 @@
+/**
+ * OrderRepository — SQLite implementation
+ *
+ * CRITICAL: insertOrderWithLines MUST run in a single SQLite transaction.
+ * PowerSync's writeTransaction() guarantees atomicity:
+ *   - Either ALL writes succeed (order + lines + stock deduction)
+ *   - Or NONE are persisted (rollback on any error)
+ *
+ * This is the heart of the checkout flow.
+ */
+import type { PowerSyncDatabase } from '@powersync/react-native';
+import type { Order, OrderLine } from '@saas-pos/domain';
+import { generateId, nowISO } from '@saas-pos/utils';
+
+export interface IOrderRepository {
+  insertOrderWithLines(order: Order, lines: readonly OrderLine[]): Promise<void>;
+  findByTenant(tenantId: string, limit?: number): Promise<Order[]>;
+  findById(id: string, tenantId: string): Promise<Order | null>;
+  updateStatus(id: string, status: Order['status'], tenantId: string): Promise<void>;
+  getLinesByOrderId(orderId: string, tenantId: string): Promise<OrderLine[]>;
+}
+
+export class SqliteOrderRepository implements IOrderRepository {
+  constructor(private readonly db: PowerSyncDatabase) {}
+
+  /**
+   * Atomic checkout: inserts order + all lines + decrements stock
+   * in a single SQLite transaction.
+   *
+   * If ANY operation fails, the entire transaction is rolled back.
+   * PowerSync will sync all these writes to Supabase as a unit.
+   */
+  async insertOrderWithLines(order: Order, lines: readonly OrderLine[]): Promise<void> {
+    await this.db.writeTransaction(async (tx) => {
+      // 1. Insert order header
+      await tx.execute(
+        `INSERT INTO orders (id, tenant_id, user_id, status, total_amount, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          order.id,
+          order.tenant_id,
+          order.user_id,
+          order.status,
+          order.total_amount,
+          order.created_at,
+          order.updated_at,
+        ],
+      );
+
+      // 2. Insert all order lines
+      for (const line of lines) {
+        await tx.execute(
+          `INSERT INTO order_lines (id, order_id, item_id, quantity, unit_price, subtotal, tenant_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            line.id,
+            line.order_id,
+            line.item_id,
+            line.quantity,
+            line.unit_price,
+            line.subtotal,
+            order.tenant_id,
+          ],
+        );
+
+        // 3. Decrement stock for product items (services have stock = NULL, no-op)
+        await tx.execute(
+          `UPDATE items
+           SET stock = stock - ?, updated_at = ?
+           WHERE id = ? AND tenant_id = ? AND type = 'product' AND stock IS NOT NULL`,
+          [line.quantity, nowISO(), line.item_id, order.tenant_id],
+        );
+      }
+    });
+  }
+
+  async findByTenant(tenantId: string, limit = 50): Promise<Order[]> {
+    return this.db.getAll<Order>(
+      `SELECT id, tenant_id, user_id, status, total_amount,
+              created_at, updated_at, deleted_at
+       FROM orders
+       WHERE tenant_id = ? AND deleted_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      [tenantId, limit],
+    );
+  }
+
+  async findById(id: string, tenantId: string): Promise<Order | null> {
+    const row = await this.db.get<Order>(
+      `SELECT id, tenant_id, user_id, status, total_amount,
+              created_at, updated_at, deleted_at
+       FROM orders WHERE id = ? AND tenant_id = ?`,
+      [id, tenantId],
+    );
+    return row ?? null;
+  }
+
+  async updateStatus(
+    id: string,
+    status: Order['status'],
+    tenantId: string,
+  ): Promise<void> {
+    await this.db.execute(
+      `UPDATE orders SET status = ?, updated_at = ?
+       WHERE id = ? AND tenant_id = ?`,
+      [status, nowISO(), id, tenantId],
+    );
+  }
+
+  async getLinesByOrderId(orderId: string, tenantId: string): Promise<OrderLine[]> {
+    return this.db.getAll<OrderLine>(
+      `SELECT id, order_id, item_id, quantity, unit_price, subtotal, tenant_id
+       FROM order_lines
+       WHERE order_id = ? AND tenant_id = ?`,
+      [orderId, tenantId],
+    );
+  }
+}

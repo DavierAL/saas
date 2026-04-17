@@ -1,5 +1,6 @@
 // @saas-pos/ui
-// Shared UI components (cross-platform where possible)
-// Will contain design tokens, shared types, and platform-agnostic logic
+// Shared UI: design tokens, theme values, and shared logic
 
-export const UI_VERSION = '0.0.1';
+export * from './tokens';
+
+export const UI_VERSION = '0.1.0';
