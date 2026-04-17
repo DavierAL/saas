@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useMemo } from 'react';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 /**
  * AnalyticsPage: Sales analytics dashboard with charts
@@ -136,7 +136,7 @@ export default function AnalyticsPage() {
               fill="#8884d8"
               dataKey="value"
             >
-              {revenueByType.map((entry, index) => (
+              {revenueByType.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -147,7 +147,7 @@ export default function AnalyticsPage() {
                 borderRadius: '4px',
                 color: TEXT_PRIMARY,
               }}
-              formatter={(value) => `S/ ${(value / 100).toFixed(2)}`}
+              formatter={(value) => `S/ ${(Number(value) / 100).toFixed(2)}`}
             />
           </PieChart>
         </ResponsiveContainer>

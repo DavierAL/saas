@@ -14,6 +14,8 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@expo/config-plugins": "54.0.4",
+    "expo": "54.0.33",
     "turbo": "^2.4.0",
     "typescript": "~5.7.0"
   },

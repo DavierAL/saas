@@ -79,11 +79,32 @@ SECURITY DEFINER  -- Runs as superuser to bypass RLS
 AS $$
 DECLARE
   v_tenant_id UUID;
+  v_sanitized_name TEXT;
 BEGIN
+  -- [AUTH-003] Defensive valid_days bounds
+  IF p_valid_days < 1 OR p_valid_days > 365 THEN
+    RAISE EXCEPTION 'p_valid_days must be between 1 and 365. Received: %', p_valid_days;
+  END IF;
+
+  -- [AUTH-003] Sanitization: Allow safe characters like accents, spaces, commas and dots.
+  v_sanitized_name := regexp_replace(p_tenant_name, '[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ .,-]', '', 'g');
+  IF trim(v_sanitized_name) = '' THEN
+    RAISE EXCEPTION 'Tenant name is invalid after security sanitization.';
+  END IF;
+
+  -- [AUTH-003] Rate limiting: Max 1 onboard request per minute per user
+  IF EXISTS (
+    SELECT 1 FROM public.tenant_members
+    WHERE auth_user_id = p_auth_user_id
+      AND created_at > (now() - interval '1 minute')
+  ) THEN
+    RAISE EXCEPTION 'Rate limit exceeded. Please wait a minute before creating another tenant.';
+  END IF;
+
   -- Create tenant
   INSERT INTO public.tenants (name, industry_type, valid_until)
   VALUES (
-    p_tenant_name,
+    v_sanitized_name,
     p_industry_type,
     now() + (p_valid_days || ' days')::INTERVAL
   )

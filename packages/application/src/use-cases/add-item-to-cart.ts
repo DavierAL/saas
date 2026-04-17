@@ -1,8 +1,4 @@
-/**
- * AddItemToCart use case.
- * Pure function that operates on cart state (Zustand store).
- * No database interaction - cart is ephemeral UI state.
- */
+import { multiplyMoney, addMoney, createMoney } from '@saas-pos/domain';
 
 export interface CartItem {
   readonly item_id: string;
@@ -43,5 +39,10 @@ export const removeItemFromCart = (
   items: cart.items.filter((i) => i.item_id !== item_id),
 });
 
-export const getCartTotal = (cart: CartState): number =>
-  cart.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+// [DOM-003] Use Money domain arithmetic to avoid floating-point accumulation
+export const getCartTotal = (cart: CartState, currency: string): number =>
+  cart.items.reduce(
+    (acc, item) => addMoney(acc, multiplyMoney(createMoney(item.unit_price, currency), item.quantity)),
+    createMoney(0, currency),
+  ).amount;
+

@@ -7,6 +7,7 @@ const makeTenant = (daysFromNow: number): Tenant => ({
   name:            'Test Bodega',
   industry_type:   'retail',
   modules_config:  { has_inventory: true, has_tables: false, has_appointments: false },
+  currency:        'PEN', // [DOM-008]
   valid_until:     new Date(Date.now() + daysFromNow * 86_400_000).toISOString(),
   created_at:      new Date().toISOString(),
   updated_at:      new Date().toISOString(),
@@ -37,12 +38,16 @@ describe('getSubscriptionStatus', () => {
       expect(getSubscriptionStatus(makeTenant(3)).isExpiringSoon).toBe(true);
     });
 
-    test('5 days → expiring soon (boundary)', () => {
+    test('5 days → expiring soon (boundary default)', () => {
       expect(getSubscriptionStatus(makeTenant(5)).isExpiringSoon).toBe(true);
     });
 
-    test('6 days → not expiring soon', () => {
+    test('6 days → not expiring soon (default 5)', () => {
       expect(getSubscriptionStatus(makeTenant(6)).isExpiringSoon).toBe(false);
+    });
+
+    test('6 days → expiring soon (custom warning 10)', () => {
+      expect(getSubscriptionStatus(makeTenant(6), 10).isExpiringSoon).toBe(true);
     });
 
     test('30 days → not expiring soon', () => {

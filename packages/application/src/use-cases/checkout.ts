@@ -1,4 +1,4 @@
-import { calculateOrderTotal, validateStock } from '@saas-pos/domain';
+import { calculateOrderTotal, validateStock, multiplyMoney, createMoney, SubscriptionExpiredError, InsufficientStockError } from '@saas-pos/domain';
 import type { Order, OrderLine } from '@saas-pos/domain';
 import { generateId, nowISO } from '@saas-pos/utils';
 import type { IOrderRepositoryPort } from '../ports/order-repository.port';
@@ -14,12 +14,13 @@ export interface CheckoutLineInput {
 export interface CheckoutInput {
   readonly tenant_id: string;
   readonly user_id: string;
+  readonly currency: string; // [DOM-008] Pass tenant currency
   readonly lines: readonly CheckoutLineInput[];
 }
 
-export type CheckoutResult =
-  | { success: true; order: Order }
-  | { success: false; reason: string };
+// CheckoutResult is now just the Order on success,
+// and errors are thrown for the caller to handle.
+export type CheckoutResult = Order;
 
 interface CheckoutDeps {
   orderRepo: IOrderRepositoryPort;
@@ -48,23 +49,19 @@ export const checkout = async (
   // ── Step 1: Subscription check ──────────────────────────────
   const isActive = await deps.tenantRepo.isSubscriptionActive(input.tenant_id);
   if (!isActive) {
-    return {
-      success: false,
-      reason: 'Suscripción vencida. No se pueden registrar ventas.',
-    };
+    throw new SubscriptionExpiredError(input.tenant_id);
   }
 
   // ── Step 2: Stock validation ─────────────────────────────────
   const allItems = await deps.itemRepo.findAll(input.tenant_id);
   const stockCheck = validateStock(input.lines, allItems);
   if (!stockCheck.valid) {
-    const names = stockCheck.insufficientItems.map(
-      (i) => `${i.name} (disponible: ${i.available}, pedido: ${i.requested})`,
+    const mainFailure = stockCheck.insufficientItems[0]!;
+    throw new InsufficientStockError(
+      mainFailure.item_id,
+      mainFailure.available,
+      mainFailure.requested,
     );
-    return {
-      success: false,
-      reason: `Stock insuficiente: ${names.join(', ')}`,
-    };
   }
 
   // ── Step 3: Build domain objects ──────────────────────────────
@@ -77,15 +74,18 @@ export const checkout = async (
     item_id:    line.item_id,
     quantity:   line.quantity,
     unit_price: line.unit_price,
-    subtotal:   line.unit_price * line.quantity,
+    // [DOM-003] Use domain Money arithmetic — avoids floating-point drift
+    subtotal:   multiplyMoney(createMoney(line.unit_price, input.currency), line.quantity).amount,
+    tenant_id:  input.tenant_id,
   }));
 
-  const total = calculateOrderTotal(input.lines);
+  const total = calculateOrderTotal(input.lines, input.currency);
 
   const order: Order = {
     id:           orderId,
     tenant_id:    input.tenant_id,
     user_id:      input.user_id,
+    currency:     input.currency, // [DOM-008]
     status:       'paid',  // POS: paid immediately at counter
     total_amount: total.amount,
     created_at:   now,
@@ -96,5 +96,17 @@ export const checkout = async (
   // ── Step 4: Atomic SQLite transaction ─────────────────────────
   await deps.orderRepo.insertOrderWithLines(order, orderLines);
 
-  return { success: true, order };
+  // [DOM-001] Decrement stock for each product line after successful insert.
+  // Services (stock = null) are skipped by the repository implementation.
+  const productLines = input.lines.filter((line) => {
+    const item = allItems.find((i) => i.id === line.item_id);
+    return item?.type === 'product' && item.stock !== null;
+  });
+  await Promise.all(
+    productLines.map((line) =>
+      deps.itemRepo.decrementStock(line.item_id, line.quantity, input.tenant_id),
+    ),
+  );
+
+  return order;
 };

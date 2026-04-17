@@ -60,17 +60,17 @@ describe('removeItemFromCart', () => {
 
 describe('getCartTotal', () => {
   test('returns 0 for empty cart', () => {
-    expect(getCartTotal(EMPTY)).toBe(0);
+    expect(getCartTotal(EMPTY, 'PEN')).toBe(0);
   });
 
   test('single item total', () => {
     const cart = addItemToCart(EMPTY, ITEM_A, 2); // 2 × 250 = 500
-    expect(getCartTotal(cart)).toBe(500);
+    expect(getCartTotal(cart, 'PEN')).toBe(500);
   });
 
   test('multi-item total', () => {
     let cart = addItemToCart(EMPTY, ITEM_A, 2);  // 500
     cart = addItemToCart(cart, ITEM_B, 1);        // 380
-    expect(getCartTotal(cart)).toBe(880);
+    expect(getCartTotal(cart, 'PEN')).toBe(880);
   });
 });

@@ -12,15 +12,17 @@ export interface Tenant {
   readonly industry_type: IndustryType;
   readonly modules_config: ModulesConfig;
   readonly valid_until: string; // ISO date string - paywall control
+  readonly currency: string;    // [DOM-008] Tenant-specific currency code
   readonly created_at: string;
   readonly updated_at: string;
   readonly deleted_at: string | null;
 }
 
 export const createTenant = (
-  params: Omit<Tenant, 'created_at' | 'updated_at' | 'deleted_at'>
+  params: Omit<Tenant, 'created_at' | 'updated_at' | 'deleted_at' | 'currency'> & { currency?: string }
 ): Tenant => ({
   ...params,
+  currency: params.currency || 'PEN', // Backwards compatibility / default
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   deleted_at: null,

@@ -1,5 +1,4 @@
 import type { Item, ItemType } from '@saas-pos/domain';
-import { generateId } from '@saas-pos/utils';
 import type { IItemRepositoryPort } from '../ports/item-repository.port';
 
 export interface CreateItemInput {

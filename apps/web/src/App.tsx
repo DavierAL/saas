@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CatalogPage } from './pages/CatalogPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { TenantsPage } from './pages/TenantsPage';
@@ -18,32 +18,35 @@ const NAV = [
   { id: 'settings' as NavId,   icon: '◬', label: 'Ajustes'     },
 ];
 
-function Sidebar({ active, onSelect }: { active: NavId; onSelect: (id: NavId) => void }) {
+function Sidebar({ active, onSelect, isOpen, onClose }: { active: NavId; onSelect: (id: NavId) => void; isOpen: boolean; onClose: () => void }) {
   return (
-    <aside style={s.sidebar}>
-      <div style={s.logo}>
-        <div style={s.logoMark}>P</div>
-        <span style={s.logoText}>SaaS POS</span>
-      </div>
-      <nav style={s.nav}>
-        {NAV.map((item) => (
-          <button
-            key={item.id}
-            style={{ ...s.navItem, ...(active === item.id ? s.navActive : {}) }}
-            onClick={() => onSelect(item.id)}
-          >
-            <span style={s.navIcon}>{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-      </nav>
-      <div style={s.sidebarBottom}>
-        <div style={s.syncRow}>
-          <span style={s.syncDot} />
-          <span style={s.syncText}>Supabase · Online</span>
+    <>
+      <div className={`sidebar-backdrop ${isOpen ? 'open' : ''}`} onClick={onClose} />
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+        <div style={s.logo}>
+          <div style={s.logoMark}>P</div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>SaaS POS</span>
         </div>
-      </div>
-    </aside>
+        <nav style={s.nav}>
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              style={{ ...s.navItem, ...(active === item.id ? s.navActive : {}) }}
+              onClick={() => { onSelect(item.id); onClose(); }}
+            >
+              <span style={s.navIcon}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={s.sidebarBottom}>
+          <div style={s.syncRow}>
+            <span style={s.syncDot} />
+            <span style={s.syncText}>Supabase · Online</span>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -54,9 +57,9 @@ function OverviewPage() {
         <h1 style={s.pageTitle}>Overview</h1>
         <span style={s.activeBadge}><span style={s.activeDot}/>Sistema operativo</span>
       </div>
-      <div style={s.statGrid}>
+      <div className="stat-grid" style={s.statGrid}>
         {[
-          { label: 'Ventas hoy',     value: formatMoney(createMoney(2410)), accent: true  },
+          { label: 'Ventas hoy',     value: formatMoney(createMoney(2410, 'PEN')), accent: true  },
           { label: 'Órdenes hoy',    value: '3',                             accent: false },
           { label: 'Tenants activos',value: '1',                             accent: false },
           { label: 'Sync status',    value: 'OK',                            accent: true  },
@@ -90,63 +93,82 @@ function OverviewPage() {
 
 export function App() {
   const [active, setActive] = useState<NavId>('overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
-  const content = {
-    overview:   <OverviewPage />,
-    catalog:    <CatalogPage />,
-    orders:     <OrdersPage />,
-    tenants:    <TenantsPage />,
-    analytics:  <AnalyticsPage />,
-    inventory:  <InventoryPage />,
-    settings:   <ComingSoon label="Ajustes" />,
-  }[active];
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+
+  let content;
+  if (active === 'settings') {
+    content = (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+          <strong style={{ color: 'var(--text-primary)' }}>Ajustes</strong> — En construcción
+        </p>
+        <button 
+          onClick={toggleTheme}
+          style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)', border: '1px solid var(--accent-border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+        >
+          Cambiar a Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
+        </button>
+      </div>
+    );
+  } else {
+    content = {
+      overview:   <OverviewPage />,
+      catalog:    <CatalogPage />,
+      orders:     <OrdersPage />,
+      tenants:    <TenantsPage />,
+      analytics:  <AnalyticsPage />,
+      inventory:  <InventoryPage />,
+    }[active];
+  }
 
   return (
-    <div style={s.app}>
-      <Sidebar active={active} onSelect={setActive} />
-      <main style={s.main}>{content}</main>
+    <div className="app-container">
+      <Sidebar active={active} onSelect={setActive} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className="main-content">
+        <header className="mobile-header">
+          <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
+          <span style={{ fontWeight: 600 }}>SaaS POS</span>
+          <div style={{ width: 32 }} /> {/* spacer */}
+        </header>
+        <main className="page-wrapper">{content}</main>
+      </div>
     </div>
   );
 }
-
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-      <p style={{ color: '#555', fontSize: 14 }}>
-        <strong style={{ color: '#ededed' }}>{label}</strong> — Próximamente
-      </p>
-    </div>
-  );
-}
+// ComingSoon removed
 
 const s: Record<string, React.CSSProperties> = {
-  app:          { display: 'flex', height: '100vh', backgroundColor: '#0f0f0f', fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#ededed', overflow: 'hidden' },
-  main:         { flex: 1, overflow: 'auto' },
-  sidebar:      { width: 216, minWidth: 216, backgroundColor: '#0f0f0f', borderRight: '1px solid #1e1e1e', display: 'flex', flexDirection: 'column' },
-  logo:         { display: 'flex', alignItems: 'center', gap: 10, padding: '20px 16px 16px', borderBottom: '1px solid #1e1e1e' },
-  logoMark:     { width: 28, height: 28, borderRadius: 6, backgroundColor: '#3ECF8E', color: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 },
-  logoText:     { fontSize: 14, fontWeight: 600, color: '#ededed', letterSpacing: '-0.2px' },
+  // Most layout moved to index.css. Kept remaining component-specific styles updated to use CSS variables.
+  logo:         { display: 'flex', alignItems: 'center', gap: 10, padding: '20px 16px 16px', borderBottom: '1px solid var(--border-light)' },
+  logoMark:     { width: 28, height: 28, borderRadius: 6, backgroundColor: 'var(--accent-color)', color: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 },
   nav:          { flex: 1, padding: '8px', display: 'flex', flexDirection: 'column', gap: 2 },
-  navItem:      { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', background: 'none', color: '#555', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
-  navActive:    { backgroundColor: '#1c1c1c', color: '#ededed', fontWeight: 500 },
+  navItem:      { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', background: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
+  navActive:    { backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', fontWeight: 600, border: '1px solid var(--border-color)' },
   navIcon:      { fontSize: 11, opacity: 0.7 },
-  sidebarBottom:{ padding: '12px 16px', borderTop: '1px solid #1e1e1e' },
+  sidebarBottom:{ padding: '12px 16px', borderTop: '1px solid var(--border-light)' },
   syncRow:      { display: 'flex', alignItems: 'center', gap: 8 },
-  syncDot:      { width: 6, height: 6, borderRadius: '50%', backgroundColor: '#3ECF8E' },
-  syncText:     { fontSize: 11, color: '#444' },
-  pageContent:  { padding: '32px 40px', maxWidth: 1000 },
+  syncDot:      { width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent-color)' },
+  syncText:     { fontSize: 11, color: 'var(--text-muted)' },
+  pageContent:  { width: '100%' },
   pageHead:     { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
-  pageTitle:    { fontSize: 22, fontWeight: 700, color: '#ededed', letterSpacing: '-0.5px', margin: 0 },
-  activeBadge:  { display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, backgroundColor: '#0d2b1e', border: '1px solid #1a4a32', fontSize: 12, color: '#3ECF8E', fontWeight: 500 },
-  activeDot:    { width: 6, height: 6, borderRadius: '50%', backgroundColor: '#3ECF8E' },
+  pageTitle:    { fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px', margin: 0 },
+  activeBadge:  { display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, backgroundColor: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 12, color: 'var(--accent-color)', fontWeight: 500 },
+  activeDot:    { width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent-color)' },
   statGrid:     { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 },
-  statCard:     { backgroundColor: '#1c1c1c', border: '1px solid #272727', borderRadius: 8, padding: '18px 20px' },
-  statLabel:    { fontSize: 11, fontWeight: 600, color: '#555', letterSpacing: '0.3px', textTransform: 'uppercase', margin: '0 0 8px' },
-  statValue:    { fontSize: 26, fontWeight: 700, color: '#ededed', letterSpacing: '-0.5px', margin: 0 },
+  statCard:     { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '18px 20px' },
+  statLabel:    { fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.3px', textTransform: 'uppercase', margin: '0 0 8px' },
+  statValue:    { fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px', margin: 0 },
   sectionWrap:  { marginBottom: 28 },
-  sectionTitle: { fontSize: 13, fontWeight: 600, color: '#555', letterSpacing: '0.4px', textTransform: 'uppercase', margin: '0 0 12px' },
-  stackTable:   { backgroundColor: '#1c1c1c', border: '1px solid #272727', borderRadius: 8, overflow: 'hidden' },
-  stackRow:     { display: 'flex', alignItems: 'center', gap: 16, padding: '12px 18px', borderBottom: '1px solid #1e1e1e' },
-  stackName:    { fontSize: 14, fontWeight: 600, color: '#ededed', minWidth: 110 },
-  stackDesc:    { flex: 1, fontSize: 13, color: '#555' },
+  sectionTitle: { fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.4px', textTransform: 'uppercase', margin: '0 0 12px' },
+  stackTable:   { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden' },
+  stackRow:     { display: 'flex', alignItems: 'center', gap: 16, padding: '12px 18px', borderBottom: '1px solid var(--border-light)' },
+  stackName:    { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', minWidth: 110 },
+  stackDesc:    { flex: 1, fontSize: 13, color: 'var(--text-secondary)' },
 };

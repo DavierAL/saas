@@ -16,3 +16,12 @@ export * from './value-objects/quantity';
 export * from './rules/pricing';
 export * from './rules/subscription';
 export * from './rules/inventory';
+
+// Errors [DOM-005]
+export * from './errors';
+
+// Factories [DOM-004]
+export * from './factories';
+
+// Test Utilities
+export * from './test-utils/builders';

@@ -13,6 +13,7 @@ export const SQLITE_SCHEMA = `
     industry_type TEXT NOT NULL CHECK(industry_type IN ('restaurant', 'barbershop', 'retail')),
     modules_config TEXT NOT NULL DEFAULT '{}',
     valid_until TEXT NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'PEN',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at TEXT
@@ -45,8 +46,9 @@ export const SQLITE_SCHEMA = `
     id TEXT PRIMARY KEY NOT NULL,
     tenant_id TEXT NOT NULL REFERENCES tenants(id),
     user_id TEXT NOT NULL REFERENCES users(id),
-    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'cancelled', 'refunded', 'partially_refunded', 'voided')),
     total_amount INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'PEN',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at TEXT

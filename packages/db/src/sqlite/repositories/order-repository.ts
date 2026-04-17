@@ -10,7 +10,7 @@
  */
 import type { PowerSyncDatabase } from '@powersync/react-native';
 import type { Order, OrderLine } from '@saas-pos/domain';
-import { generateId, nowISO } from '@saas-pos/utils';
+import { nowISO } from '@saas-pos/utils';
 
 export interface IOrderRepository {
   insertOrderWithLines(order: Order, lines: readonly OrderLine[]): Promise<void>;
@@ -34,14 +34,15 @@ export class SqliteOrderRepository implements IOrderRepository {
     await this.db.writeTransaction(async (tx) => {
       // 1. Insert order header
       await tx.execute(
-        `INSERT INTO orders (id, tenant_id, user_id, status, total_amount, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO orders (id, tenant_id, user_id, status, total_amount, currency, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           order.id,
           order.tenant_id,
           order.user_id,
           order.status,
           order.total_amount,
+          order.currency,
           order.created_at,
           order.updated_at,
         ],
@@ -76,7 +77,7 @@ export class SqliteOrderRepository implements IOrderRepository {
 
   async findByTenant(tenantId: string, limit = 50): Promise<Order[]> {
     return this.db.getAll<Order>(
-      `SELECT id, tenant_id, user_id, status, total_amount,
+      `SELECT id, tenant_id, user_id, status, total_amount, currency,
               created_at, updated_at, deleted_at
        FROM orders
        WHERE tenant_id = ? AND deleted_at IS NULL
@@ -88,7 +89,7 @@ export class SqliteOrderRepository implements IOrderRepository {
 
   async findById(id: string, tenantId: string): Promise<Order | null> {
     const row = await this.db.get<Order>(
-      `SELECT id, tenant_id, user_id, status, total_amount,
+      `SELECT id, tenant_id, user_id, status, total_amount, currency,
               created_at, updated_at, deleted_at
        FROM orders WHERE id = ? AND tenant_id = ?`,
       [id, tenantId],

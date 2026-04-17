@@ -8,11 +8,14 @@ export interface Money {
   readonly currency: string;
 }
 
-export const createMoney = (amount: number, currency = 'PEN'): Money => {
+export const createMoney = (amount: number, currency: string): Money => {
   if (!Number.isInteger(amount)) {
     throw new Error(`Money amount must be integer cents, got: ${amount}`);
   }
-  return { amount, currency };
+  if (!currency || currency.trim() === '') {
+    throw new Error('Currency code is required');
+  }
+  return { amount, currency: currency.trim().toUpperCase() };
 };
 
 export const addMoney = (a: Money, b: Money): Money => {
@@ -30,7 +33,11 @@ export const multiplyMoney = (money: Money, quantity: number): Money => {
 };
 
 export const formatMoney = (money: Money): string => {
-  const whole = Math.floor(money.amount / 100);
-  const cents = Math.abs(money.amount % 100);
-  return `${money.currency} ${whole}.${cents.toString().padStart(2, '0')}`;
+  // [DOM-002] Separate sign before arithmetic to avoid e.g. -150 => "S/ -2.50" (wrong)
+  const isNegative = money.amount < 0;
+  const absAmount = Math.abs(money.amount);
+  const whole = Math.floor(absAmount / 100);
+  const cents = absAmount % 100;
+  const sign = isNegative ? '-' : '';
+  return `${money.currency} ${sign}${whole}.${cents.toString().padStart(2, '0')}`;
 };

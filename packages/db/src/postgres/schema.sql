@@ -206,3 +206,45 @@ DO $$ BEGIN
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+-- ============================================================
+-- SOFT DELETE: Ensure server-side timestamp
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.handle_soft_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- If deleted_at is being set from NULL to something else,
+  -- always force server-side now() to prevent client clock drift.
+  IF OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL THEN
+    NEW.deleted_at = now();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$ BEGIN
+  CREATE TRIGGER trg_tenants_soft_delete
+    BEFORE UPDATE ON public.tenants
+    FOR EACH ROW EXECUTE FUNCTION public.handle_soft_delete();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER trg_users_soft_delete
+    BEFORE UPDATE ON public.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_soft_delete();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER trg_items_soft_delete
+    BEFORE UPDATE ON public.items
+    FOR EACH ROW EXECUTE FUNCTION public.handle_soft_delete();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER trg_orders_soft_delete
+    BEFORE UPDATE ON public.orders
+    FOR EACH ROW EXECUTE FUNCTION public.handle_soft_delete();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

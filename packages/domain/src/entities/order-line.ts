@@ -5,4 +5,5 @@ export interface OrderLine {
   readonly quantity: number;
   readonly unit_price: number; // snapshot in integer cents
   readonly subtotal: number;   // quantity * unit_price in integer cents
+  readonly tenant_id: string;
 }

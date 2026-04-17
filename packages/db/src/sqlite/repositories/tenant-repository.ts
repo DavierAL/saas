@@ -25,12 +25,13 @@ export class SqliteTenantRepository implements ITenantRepository {
       industry_type: string;
       modules_config: string;
       valid_until: string;
+      currency: string;
       created_at: string;
       updated_at: string;
       deleted_at: string | null;
     }>(
       `SELECT id, name, industry_type, modules_config,
-              valid_until, created_at, updated_at, deleted_at
+              valid_until, currency, created_at, updated_at, deleted_at
        FROM tenants WHERE id = ?`,
       [id],
     );

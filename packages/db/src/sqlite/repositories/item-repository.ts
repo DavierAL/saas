@@ -40,7 +40,7 @@ export class SqliteItemRepository implements IItemRepository {
     const row = await this.db.get<Item>(
       `SELECT id, tenant_id, type, name, price, stock,
               created_at, updated_at, deleted_at
-       FROM items WHERE id = ? AND tenant_id = ?`,
+       FROM items WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL`,
       [id, tenantId],
     );
     return row ?? null;

@@ -128,7 +128,7 @@ CREATE POLICY "tables_update" ON public.tables_restaurant
   WITH CHECK (tenant_id::TEXT = public.tenant_id());
 
 CREATE POLICY "tables_delete" ON public.tables_restaurant
-  FOR DELETE USING (tenant_id::TEXT = public.tenant_id());
+  FOR DELETE USING (false);
 
 -- ─── APPOINTMENTS ────────────────────────────────────────────
 DROP POLICY IF EXISTS "appointments_tenant_isolation" ON public.appointments;
@@ -145,4 +145,4 @@ CREATE POLICY "appt_update" ON public.appointments
   WITH CHECK (tenant_id::TEXT = public.tenant_id());
 
 CREATE POLICY "appt_delete" ON public.appointments
-  FOR DELETE USING (tenant_id::TEXT = public.tenant_id());
+  FOR DELETE USING (false);

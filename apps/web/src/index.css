@@ -1,0 +1,148 @@
+/* index.css */
+
+/* 1. Theme Variables (UX-021) */
+:root {
+  /* Default (Dark Mode) */
+  --bg-primary: #0f0f0f;
+  --bg-surface: #1c1c1c;
+  --bg-hover: #1a1a1a;
+  --border-color: #272727;
+  --border-light: #1e1e1e;
+  
+  --text-primary: #ededed;
+  --text-secondary: #9b9b9b;
+  --text-muted: #555555;
+  
+  --accent-color: #3ECF8E;
+  --accent-bg: #0d2b1e;
+  --accent-border: #1a4a32;
+  
+  --error-color: #EF4444;
+  --warning-color: #F59E0B;
+}
+
+[data-theme='light'] {
+  --bg-primary: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-hover: #f1f5f9;
+  --border-color: #e2e8f0;
+  --border-light: #cbd5e1;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --accent-color: #10b981;
+  --accent-bg: #ecfdf5;
+  --accent-border: #a7f3d0;
+}
+
+/* Base styles */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* 2. Responsive Application Layout (UX-020) */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+.main-content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-wrapper {
+  padding: 32px 40px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 216px;
+  min-width: 216px;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+  z-index: 50;
+}
+
+/* Mobile Header (Hidden by default) */
+.mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Backdrop */
+.sidebar-backdrop {
+  display: none;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .sidebar-backdrop.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+  }
+  
+  .page-wrapper {
+    padding: 24px 20px;
+  }
+  
+  /* Make grids flow vertically on mobile */
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Common UI Elements utilizing variables */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+}
