@@ -1,24 +1,26 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { CatalogPage } from './pages/CatalogPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { TenantsPage } from './pages/TenantsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import InventoryPage from './pages/InventoryPage';
 import { formatMoney, createMoney } from '@saas-pos/domain';
+import { AuthGuard } from './components/AuthGuard';
 
 type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'settings';
 
 const NAV = [
-  { id: 'overview' as NavId,   icon: '◼', label: 'Overview'    },
-  { id: 'catalog'  as NavId,   icon: '◈', label: 'Catálogo'    },
-  { id: 'orders'   as NavId,   icon: '◉', label: 'Órdenes'     },
-  { id: 'tenants'  as NavId,   icon: '◧', label: 'Tenants'     },
-  { id: 'analytics'as NavId,   icon: '◫', label: 'Analytics'   },
-  { id: 'inventory'as NavId,   icon: '◪', label: 'Inventario'  },
-  { id: 'settings' as NavId,   icon: '◬', label: 'Ajustes'     },
+  { id: 'overview' as NavId,   path: '/',           icon: '◼', label: 'Overview'    },
+  { id: 'catalog'  as NavId,   path: '/catalog',    icon: '◈', label: 'Catálogo'    },
+  { id: 'orders'   as NavId,   path: '/orders',     icon: '◉', label: 'Órdenes'     },
+  { id: 'tenants'  as NavId,   path: '/tenants',    icon: '◧', label: 'Tenants'     },
+  { id: 'analytics'as NavId,   path: '/analytics',  icon: '◫', label: 'Analytics'   },
+  { id: 'inventory'as NavId,   path: '/inventory',  icon: '◪', label: 'Inventario'  },
+  { id: 'settings' as NavId,   path: '/settings',   icon: '◬', label: 'Ajustes'     },
 ];
 
-function Sidebar({ active, onSelect, isOpen, onClose }: { active: NavId; onSelect: (id: NavId) => void; isOpen: boolean; onClose: () => void }) {
+function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   return (
     <>
       <div className={`sidebar-backdrop ${isOpen ? 'open' : ''}`} onClick={onClose} />
@@ -29,14 +31,16 @@ function Sidebar({ active, onSelect, isOpen, onClose }: { active: NavId; onSelec
         </div>
         <nav style={s.nav}>
           {NAV.map((item) => (
-            <button
+            <NavLink
               key={item.id}
-              style={{ ...s.navItem, ...(active === item.id ? s.navActive : {}) }}
-              onClick={() => { onSelect(item.id); onClose(); }}
+              to={item.path}
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              style={({ isActive }) => ({ ...s.navItem, ...(isActive ? s.navActive : {}) })}
+              onClick={onClose}
             >
               <span style={s.navIcon}>{item.icon}</span>
               {item.label}
-            </button>
+            </NavLink>
           ))}
         </nav>
         <div style={s.sidebarBottom}>
@@ -92,7 +96,6 @@ function OverviewPage() {
 }
 
 export function App() {
-  const [active, setActive] = useState<NavId>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
@@ -102,42 +105,41 @@ export function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-  let content;
-  if (active === 'settings') {
-    content = (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-          <strong style={{ color: 'var(--text-primary)' }}>Ajustes</strong> — En construcción
-        </p>
-        <button 
-          onClick={toggleTheme}
-          style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)', border: '1px solid var(--accent-border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
-        >
-          Cambiar a Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
-        </button>
-      </div>
-    );
-  } else {
-    content = {
-      overview:   <OverviewPage />,
-      catalog:    <CatalogPage />,
-      orders:     <OrdersPage />,
-      tenants:    <TenantsPage />,
-      analytics:  <AnalyticsPage />,
-      inventory:  <InventoryPage />,
-    }[active];
-  }
-
   return (
     <div className="app-container">
-      <Sidebar active={active} onSelect={setActive} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="main-content">
         <header className="mobile-header">
           <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
           <span style={{ fontWeight: 600 }}>SaaS POS</span>
           <div style={{ width: 32 }} /> {/* spacer */}
         </header>
-        <main className="page-wrapper">{content}</main>
+        <main className="page-wrapper">
+          <AuthGuard>
+            <Routes>
+              <Route path="/" element={<OverviewPage />} />
+              <Route path="/catalog" element={<CatalogPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/tenants" element={<TenantsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/settings" element={
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                    <strong style={{ color: 'var(--text-primary)' }}>Ajustes</strong> — En construcción
+                  </p>
+                  <button 
+                    onClick={toggleTheme}
+                    style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)', border: '1px solid var(--accent-border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Cambiar a Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
+                  </button>
+                </div>
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthGuard>
+        </main>
       </div>
     </div>
   );
