@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import type { Item } from '@saas-pos/domain';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 
-import { supabase } from '../lib/supabase';
+import { useCases } from '../lib/use-cases';
+
+const FIXED_TENANT_ID = '00000000-0000-0000-0000-000000000000'; // TODO: Get from context/auth
 
 type SortField = 'name' | 'price' | 'stock' | 'type';
 type SortDir = 'asc' | 'desc';
@@ -34,10 +36,13 @@ export function CatalogPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.from('items').select('*')
-      .then(({ data, error }) => {
-        if (error) setError(error.message);
-        else setItems(data as unknown as Item[]);
+    useCases.manageCatalog.findAll(FIXED_TENANT_ID)
+      .then((data) => {
+        setItems(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || 'Error al cargar el catálogo');
         setLoading(false);
       });
   }, []);

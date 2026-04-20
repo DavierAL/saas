@@ -1,9 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import type { Item } from '@saas-pos/domain';
+import { useCases } from '../lib/use-cases';
+
+const FIXED_TENANT_ID = '00000000-0000-0000-0000-000000000000'; // TODO: Get from context/auth
 
 /**
  * InventoryPage: Stock management and low stock alerts
  * Shows: inventory levels, stock alerts, movement history
- * Uses mock data (in production, would fetch from PowerSync)
+ * Uses shared use cases to fetch real data.
  */
 
 interface InventoryItem {
@@ -27,80 +31,7 @@ interface StockMovement {
   reason: string;
 }
 
-// Mock data
-const generateInventoryItems = (): InventoryItem[] => [
-  {
-    id: '1',
-    name: 'Café Espresso Beans',
-    type: 'product',
-    currentStock: 5,
-    minimumStock: 10,
-    reorderQuantity: 50,
-    lastRestockDate: '2026-04-10',
-    price: 2500,
-  },
-  {
-    id: '2',
-    name: 'Leche Fresca 1L',
-    type: 'product',
-    currentStock: 8,
-    minimumStock: 15,
-    reorderQuantity: 40,
-    lastRestockDate: '2026-04-12',
-    price: 800,
-  },
-  {
-    id: '3',
-    name: 'Pan Integral',
-    type: 'product',
-    currentStock: 25,
-    minimumStock: 10,
-    reorderQuantity: 30,
-    lastRestockDate: '2026-04-14',
-    price: 600,
-  },
-  {
-    id: '4',
-    name: 'Azúcar Blanca 1kg',
-    type: 'product',
-    currentStock: 18,
-    minimumStock: 8,
-    reorderQuantity: 20,
-    lastRestockDate: '2026-04-08',
-    price: 450,
-  },
-  {
-    id: '5',
-    name: 'Chocolate Premium',
-    type: 'product',
-    currentStock: 3,
-    minimumStock: 5,
-    reorderQuantity: 25,
-    lastRestockDate: '2026-04-11',
-    price: 1200,
-  },
-  {
-    id: '6',
-    name: 'Té Verde Premium',
-    type: 'product',
-    currentStock: 12,
-    minimumStock: 8,
-    reorderQuantity: 30,
-    lastRestockDate: '2026-04-13',
-    price: 3500,
-  },
-  {
-    id: '7',
-    name: 'Haircut Service',
-    type: 'service',
-    currentStock: 9999, // Services don't have stock
-    minimumStock: 0,
-    reorderQuantity: 0,
-    lastRestockDate: 'N/A',
-    price: 5000,
-  },
-];
-
+// Mock data for movements (since we don't have a movement repo yet in the factory)
 const generateStockMovements = (): StockMovement[] => [
   {
     id: '1',
@@ -159,9 +90,31 @@ const WARNING = '#f59e0b'; // Amber
 const DANGER = '#ef4444';
 
 export default function InventoryPage() {
-  const items = useMemo(() => generateInventoryItems(), []);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const movements = useMemo(() => generateStockMovements(), []);
   const [filterType, setFilterType] = useState<'all' | 'low' | 'ok'>('all');
+
+  useEffect(() => {
+    useCases.manageCatalog.findAll(FIXED_TENANT_ID)
+      .then((data: Item[]) => {
+        const mapped: InventoryItem[] = data.map(item => ({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          currentStock: item.stock ?? (item.type === 'service' ? 9999 : 0),
+          minimumStock: item.type === 'service' ? 0 : 10, // Default for now
+          reorderQuantity: item.type === 'service' ? 0 : 20, // Default for now
+          lastRestockDate: 'N/A',
+          price: item.price,
+        }));
+        setItems(mapped);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
 
   // Calculate low stock items
   const lowStockItems = useMemo(() => items.filter((item) => item.currentStock <= item.minimumStock), [items]);
@@ -181,6 +134,12 @@ export default function InventoryPage() {
     <div style={{ backgroundColor: DARK_BG, color: TEXT_PRIMARY, padding: '2rem', minHeight: '100vh' }}>
       <h1 style={{ marginTop: 0, fontSize: '2rem', fontWeight: 700 }}>📦 Inventory Management</h1>
 
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: TEXT_SECONDARY }}>
+          <p>Cargando inventario...</p>
+        </div>
+      ) : (
+      <>
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <SummaryCard label="Total Stock Value" value={`S/ ${(totalValue / 100).toFixed(2)}`} accent={ACCENT} />
@@ -357,6 +316,8 @@ export default function InventoryPage() {
       <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: SURFACE, borderLeft: `3px solid ${ACCENT}`, borderRadius: '4px', color: TEXT_SECONDARY, fontSize: '14px' }}>
         📌 In production, this page syncs real-time inventory data from PowerSync. Stock movements automatically update when orders are placed.
       </div>
+      </>
+      )}
     </div>
   );
 }

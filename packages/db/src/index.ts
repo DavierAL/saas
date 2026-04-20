@@ -3,6 +3,9 @@
 
 export * from './schema/sqlite-schema';
 export * from './migrations/migration-runner';
+// Supabase Client
+export * from './supabase/client';
+
 // SQLite Repositories (Mobile)
 export * from './sqlite/repositories/item-repository';
 export * from './sqlite/repositories/order-repository';

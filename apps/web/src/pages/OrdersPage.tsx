@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Order } from '@saas-pos/domain';
 import { formatMoney, createMoney } from '@saas-pos/domain';
-import { supabase } from '../lib/supabase';
+import { useCases } from '../lib/use-cases';
+
+const FIXED_TENANT_ID = '00000000-0000-0000-0000-000000000000'; // TODO: Get from context/auth
 
 const STATUS = {
   paid:               { label: 'Pagado',    color: '#3ECF8E', bg: '#0d2b1e' },
@@ -18,11 +20,13 @@ export function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.from('orders').select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) setError(error.message);
-        else setOrders(data as unknown as Order[]);
+    useCases.orders.findByTenant(FIXED_TENANT_ID)
+      .then((data) => {
+        setOrders(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || 'Error al cargar las órdenes');
         setLoading(false);
       });
   }, []);
