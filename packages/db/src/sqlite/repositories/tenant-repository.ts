@@ -38,11 +38,23 @@ export class SqliteTenantRepository implements ITenantRepository {
 
     if (!row) return null;
 
+    let modulesConfig: Tenant['modules_config'];
+    try {
+      modulesConfig = JSON.parse(row.modules_config) as Tenant['modules_config'];
+    } catch {
+      // [DB-001] Fallback to safe default if JSON is corrupted
+      modulesConfig = {
+        has_inventory: false,
+        has_tables:    false,
+        has_appointments: false,
+      };
+    }
+
     return {
       ...row,
       industry_type: row.industry_type as Tenant['industry_type'],
       // modules_config is stored as JSON string in SQLite
-      modules_config: JSON.parse(row.modules_config) as Tenant['modules_config'],
+      modules_config: modulesConfig,
     };
   }
 

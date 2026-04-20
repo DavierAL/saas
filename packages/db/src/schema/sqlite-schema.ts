@@ -23,7 +23,6 @@ export const SQLITE_SCHEMA = `
     id TEXT PRIMARY KEY NOT NULL,
     tenant_id TEXT NOT NULL REFERENCES tenants(id),
     email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('admin', 'cashier', 'waiter')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),

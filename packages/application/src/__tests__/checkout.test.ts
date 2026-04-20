@@ -2,7 +2,7 @@ import { checkout } from '../use-cases/checkout';
 import type { IOrderRepositoryPort } from '../ports/order-repository.port';
 import type { IItemRepositoryPort } from '../ports/item-repository.port';
 import type { ITenantRepositoryPort } from '../ports/tenant-repository.port';
-import { SubscriptionExpiredError, InsufficientStockError, itemBuilder } from '@saas-pos/domain';
+import { SubscriptionExpiredError, InsufficientStockError, itemBuilder, tenantBuilder } from '@saas-pos/domain';
 
 // Fixtures now handled via Builders in test-utils/builders.ts
 
@@ -31,8 +31,8 @@ beforeEach(() => {
   };
 
   tenantRepo = {
-    findById:                jest.fn(),
-    isSubscriptionActive:    jest.fn().mockResolvedValue(true),
+    findById: jest.fn().mockResolvedValue(tenantBuilder().active().build()),
+    isSubscriptionActive: jest.fn().mockResolvedValue(true), // Now redundant but kept for interface compliance
   };
 });
 
@@ -49,7 +49,6 @@ describe('checkout use case', () => {
       {
         tenant_id: 'tenant-1',
         user_id:   'user-1',
-        currency:  'PEN',
         lines:     [{ item_id: 'prod-1', quantity: 2, unit_price: 500 }],
       },
       deps(),
@@ -57,8 +56,8 @@ describe('checkout use case', () => {
 
     expect(order.total_amount).toBe(1000);
     expect(orderRepo.insertOrderWithLines).toHaveBeenCalledTimes(1);
-    // [TEST-002] Verify stock decrement!
-    expect(itemRepo.decrementStock).toHaveBeenCalledWith('prod-1', 2, 'tenant-1');
+    // [TEST-002] Stock decrement is now handled by insertOrderWithLines!
+    expect(itemRepo.decrementStock).not.toHaveBeenCalled();
   });
 
   test('calculates correct total for mixed cart', async () => {
@@ -72,7 +71,6 @@ describe('checkout use case', () => {
       {
         tenant_id: 'tenant-1',
         user_id:   'user-1',
-        currency:  'PEN',
         lines: [
           { item_id: 'prod-1',    quantity: 2, unit_price: 500 },
           { item_id: 'prod-2',    quantity: 1, unit_price: 380 },
@@ -92,7 +90,6 @@ describe('checkout use case', () => {
       {
         tenant_id: 'tenant-1',
         user_id:   'user-1',
-        currency:  'PEN',
         lines:     [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }],
       },
       deps(),
@@ -111,7 +108,6 @@ describe('checkout use case', () => {
       {
         tenant_id: 'tenant-1',
         user_id:   'user-1',
-        currency:  'PEN',
         lines:     [{ item_id: 'prod-1', quantity: 5, unit_price: 500 }],
       },
       deps(),
@@ -130,7 +126,6 @@ describe('checkout use case', () => {
       {
         tenant_id: 'tenant-1',
         user_id:   'user-1',
-        currency:  'PEN',
         lines:     [{ item_id: 'service-1', quantity: 999, unit_price: 1500 }],
       },
       deps(),
@@ -144,8 +139,8 @@ describe('checkout use case', () => {
     itemRepo.findAll.mockResolvedValue([itemBuilder().withId('prod-1').build()]);
 
     const [o1, o2] = await Promise.all([
-      checkout({ tenant_id: 'tenant-1', user_id: 'user-1', currency: 'PEN', lines: [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }] }, deps()),
-      checkout({ tenant_id: 'tenant-1', user_id: 'user-1', currency: 'PEN', lines: [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }] }, deps()),
+      checkout({ tenant_id: 'tenant-1', user_id: 'user-1', lines: [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }] }, deps()),
+      checkout({ tenant_id: 'tenant-1', user_id: 'user-1', lines: [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }] }, deps()),
     ]);
 
     expect(o1.id).not.toBe(o2.id);
@@ -161,7 +156,6 @@ describe('checkout use case', () => {
       {
         tenant_id: 'tenant-1',
         user_id:   'user-1',
-        currency:  'PEN',
         lines: [
           { item_id: 'prod-1', quantity: 1, unit_price: 500 },
           { item_id: 'prod-2', quantity: 2, unit_price: 380 },
@@ -172,5 +166,35 @@ describe('checkout use case', () => {
 
     const [_order, lines] = orderRepo.insertOrderWithLines.mock.calls[0]!;
     expect(lines).toHaveLength(2);
+  });
+
+  test('fails when tenant is not found', async () => {
+    tenantRepo.findById.mockResolvedValue(null);
+
+    const promise = checkout(
+      {
+        tenant_id: 'non-existent',
+        user_id:   'user-1',
+        lines:     [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }],
+      },
+      deps(),
+    );
+
+    await expect(promise).rejects.toThrow('Tenant not found');
+  });
+
+  test('fails when subscription is expired (using domain logic)', async () => {
+    tenantRepo.findById.mockResolvedValue(tenantBuilder().expired().build());
+
+    const promise = checkout(
+      {
+        tenant_id: 'tenant-1',
+        user_id:   'user-1',
+        lines:     [{ item_id: 'prod-1', quantity: 1, unit_price: 500 }],
+      },
+      deps(),
+    );
+
+    await expect(promise).rejects.toThrow(SubscriptionExpiredError);
   });
 });

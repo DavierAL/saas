@@ -1,4 +1,4 @@
-import { calculateOrderTotal, validateStock, multiplyMoney, createMoney, SubscriptionExpiredError, InsufficientStockError } from '@saas-pos/domain';
+import { calculateOrderTotal, validateStock, multiplyMoney, createMoney, SubscriptionExpiredError, InsufficientStockError, isTenantSubscriptionActive } from '@saas-pos/domain';
 import type { Order, OrderLine } from '@saas-pos/domain';
 import { generateId, nowISO } from '@saas-pos/utils';
 import type { IOrderRepositoryPort } from '../ports/order-repository.port';
@@ -14,7 +14,6 @@ export interface CheckoutLineInput {
 export interface CheckoutInput {
   readonly tenant_id: string;
   readonly user_id: string;
-  readonly currency: string; // [DOM-008] Pass tenant currency
   readonly lines: readonly CheckoutLineInput[];
 }
 
@@ -47,10 +46,17 @@ export const checkout = async (
   deps: CheckoutDeps,
 ): Promise<CheckoutResult> => {
   // ── Step 1: Subscription check ──────────────────────────────
-  const isActive = await deps.tenantRepo.isSubscriptionActive(input.tenant_id);
-  if (!isActive) {
+  const tenant = await deps.tenantRepo.findById(input.tenant_id);
+  if (!tenant) {
+    throw new Error(`Tenant not found: ${input.tenant_id}`);
+  }
+
+  if (!isTenantSubscriptionActive(tenant)) {
     throw new SubscriptionExpiredError(input.tenant_id);
   }
+
+  const { currency } = tenant;
+
 
   // ── Step 2: Stock validation ─────────────────────────────────
   const allItems = await deps.itemRepo.findAll(input.tenant_id);
@@ -75,17 +81,17 @@ export const checkout = async (
     quantity:   line.quantity,
     unit_price: line.unit_price,
     // [DOM-003] Use domain Money arithmetic — avoids floating-point drift
-    subtotal:   multiplyMoney(createMoney(line.unit_price, input.currency), line.quantity).amount,
+    subtotal:   multiplyMoney(createMoney(line.unit_price, currency), line.quantity).amount,
     tenant_id:  input.tenant_id,
   }));
 
-  const total = calculateOrderTotal(input.lines, input.currency);
+  const total = calculateOrderTotal(input.lines, currency);
 
   const order: Order = {
     id:           orderId,
     tenant_id:    input.tenant_id,
     user_id:      input.user_id,
-    currency:     input.currency, // [DOM-008]
+    currency:     currency, // [DOM-008]
     status:       'paid',  // POS: paid immediately at counter
     total_amount: total.amount,
     created_at:   now,
@@ -98,15 +104,5 @@ export const checkout = async (
 
   // [DOM-001] Decrement stock for each product line after successful insert.
   // Services (stock = null) are skipped by the repository implementation.
-  const productLines = input.lines.filter((line) => {
-    const item = allItems.find((i) => i.id === line.item_id);
-    return item?.type === 'product' && item.stock !== null;
-  });
-  await Promise.all(
-    productLines.map((line) =>
-      deps.itemRepo.decrementStock(line.item_id, line.quantity, input.tenant_id),
-    ),
-  );
-
   return order;
 };

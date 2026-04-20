@@ -36,7 +36,6 @@ export const useCheckout = () => {
         {
           tenant_id: tenantId,
           user_id: 'demo-user-id',  // Phase 3 will use real auth user
-          currency:   'PEN', // [DOM-008] Phase 4 will use tenant.currency
           lines: cart.items.map((item) => ({
             item_id:    item.item_id,
             quantity:   item.quantity,

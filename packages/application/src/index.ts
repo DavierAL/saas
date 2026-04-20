@@ -2,7 +2,6 @@
 // Use cases / application services
 
 // Use cases
-export * from './use-cases/create-order';
 export * from './use-cases/add-item-to-cart';
 export * from './use-cases/validate-subscription';
 export * from './use-cases/checkout';

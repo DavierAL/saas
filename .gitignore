@@ -5,6 +5,9 @@ node_modules/
 dist/
 .turbo/
 .expo/
+*.log
+*.keystore
+tsconfig.tsbuildinfo
 
 # Environment
 .env

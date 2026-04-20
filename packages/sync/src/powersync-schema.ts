@@ -28,7 +28,6 @@ const users = new Table(
   {
     tenant_id:     { type: ColumnType.TEXT },
     email:         { type: ColumnType.TEXT },
-    password_hash: { type: ColumnType.TEXT },
     role:          { type: ColumnType.TEXT },
     created_at:    { type: ColumnType.TEXT },
     updated_at:    { type: ColumnType.TEXT },
