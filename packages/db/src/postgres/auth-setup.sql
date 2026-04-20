@@ -18,41 +18,30 @@ CREATE INDEX IF NOT EXISTS idx_tenant_members_tenant ON public.tenant_members(te
 
 -- No RLS needed: this table is only read by the hook below (service_role context)
 
--- ─── 2. JWT Customization Hook ───────────────────────────────
--- Supabase calls this function after login to enrich the JWT.
--- It adds tenant_id and role into app_metadata, which PowerSync reads.
+-- ─── 2. JWT Customization Hook (Versión SQL Puro) ────────────
+-- Esta versión no usa variables internas ni bloques DECLARE,
+-- evitando errores de parsing en editores que dividen por ';'.
 CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event JSONB)
 RETURNS JSONB
-LANGUAGE plpgsql
+LANGUAGE SQL
 STABLE
-AS $$
-DECLARE
-  claims        JSONB;
-  member_record RECORD;
-BEGIN
-  -- Look up the tenant membership for this auth user
-  SELECT tenant_id, role
-  INTO   member_record
-  FROM   public.tenant_members
-  WHERE  auth_user_id = (event->>'user_id')::UUID;
-
-  claims := event->'claims';
-
-  IF member_record IS NOT NULL THEN
-    -- Inject tenant_id and role into the JWT claims
-    -- PowerSync reads tenant_id via request.jwt()->>'tenant_id'
-    -- RLS reads it via public.tenant_id() function
-    claims := jsonb_set(claims, '{tenant_id}', to_jsonb(member_record.tenant_id::TEXT));
-    claims := jsonb_set(claims, '{role}',      to_jsonb(member_record.role));
-  ELSE
-    -- User has no tenant membership — deny meaningful access
-    claims := jsonb_set(claims, '{tenant_id}', 'null'::jsonb);
-    claims := jsonb_set(claims, '{role}',      '"none"'::jsonb);
-  END IF;
-
-  RETURN jsonb_set(event, '{claims}', claims);
-END;
-$$;
+AS $body$
+  SELECT jsonb_set(
+    event,
+    '{claims}',
+    (event->'claims') || COALESCE(
+      (
+        SELECT jsonb_build_object(
+          'tenant_id', tenant_id::text,
+          'role', role
+        )
+        FROM public.tenant_members
+        WHERE auth_user_id = (event->>'user_id')::uuid
+      ),
+      jsonb_build_object('tenant_id', null, 'role', 'none')
+    )
+  );
+$body$;
 
 -- Grant permissions for the hook to run under service_role
 GRANT EXECUTE ON FUNCTION public.custom_access_token_hook TO supabase_auth_admin;

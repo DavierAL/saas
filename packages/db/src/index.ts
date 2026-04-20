@@ -5,6 +5,7 @@ export * from './schema/sqlite-schema';
 export * from './migrations/migration-runner';
 // Supabase Client
 export * from './supabase/client';
+export * from './supabase/remote-validator';
 
 // SQLite Repositories (Mobile)
 export * from './sqlite/repositories/item-repository';

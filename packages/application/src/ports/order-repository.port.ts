@@ -6,4 +6,5 @@ export interface IOrderRepositoryPort {
   findById(id: string, tenantId: string): Promise<Order | null>;
   updateStatus(id: string, status: Order['status'], tenantId: string): Promise<void>;
   getLinesByOrderId(orderId: string, tenantId: string): Promise<OrderLine[]>;
+  getAnalytics(tenantId: string, days?: number): Promise<import('@saas-pos/domain').OrderAnalytics>;
 }

@@ -74,4 +74,14 @@ export class SupabaseOrderRepository implements IOrderRepositoryPort {
     if (error) throw error;
     return data as OrderLine[];
   }
+
+  async getAnalytics(tenantId: string, days = 30): Promise<import('@saas-pos/domain').OrderAnalytics> {
+    const { data, error } = await this.client.rpc('get_sales_analytics', {
+      p_tenant_id: tenantId,
+      p_days: days,
+    });
+
+    if (error) throw error;
+    return data as import('@saas-pos/domain').OrderAnalytics;
+  }
 }

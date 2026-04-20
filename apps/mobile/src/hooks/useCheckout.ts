@@ -10,6 +10,7 @@ import { checkout } from '@saas-pos/application';
 import { SqliteOrderRepository } from '@saas-pos/db';
 import { SqliteItemRepository } from '@saas-pos/db';
 import { SqliteTenantRepository } from '@saas-pos/db';
+import * as Sentry from '@sentry/react-native';
 import { useCartStore } from '../store/cart.store';
 import { useAuth } from '../providers/AppProvider';
 import type { Order } from '@saas-pos/domain';
@@ -53,6 +54,13 @@ export const useCheckout = () => {
       cart.clearCart();
       setState('success');
     } catch (err: any) {
+      Sentry.captureException(err, {
+        extra: {
+          tenantId,
+          itemCount: cart.items.length,
+          total: cart.total(),
+        }
+      });
       setError(err.message || 'Error desconocido al procesar el pago');
       setState('error');
     }

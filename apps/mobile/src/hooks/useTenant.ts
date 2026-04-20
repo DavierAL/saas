@@ -7,6 +7,7 @@ interface RawTenantRow {
   industry_type: string;
   modules_config: string;  // JSON string in SQLite
   valid_until: string;
+  last_remote_validation_at: string | null;
   currency: string;
   created_at: string;
   updated_at: string;
@@ -15,7 +16,8 @@ interface RawTenantRow {
 
 export const useTenant = (tenantId: string): Tenant | null => {
   const data = usePowerSyncQuery<RawTenantRow>(
-    `SELECT id, name, industry_type, modules_config, valid_until, currency,
+    `SELECT id, name, industry_type, modules_config, valid_until, 
+            last_remote_validation_at, currency,
             created_at, updated_at, deleted_at
      FROM tenants WHERE id = ?`,
     [tenantId],

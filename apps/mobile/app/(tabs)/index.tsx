@@ -142,7 +142,7 @@ function ItemRow({ item, onAdd }: { item: Item; onAdd: (item: Item) => void }) {
 // ─── main screen ──────────────────────────────────────────────────────────────
 
 export default function CatalogScreen() {
-  const { tenantId } = useAuth();
+  const { tenantId, subscriptionWarning } = useAuth();
   const { status } = useSyncStatus();
 
   const rawItems = useItems(tenantId ?? '');
@@ -179,6 +179,13 @@ export default function CatalogScreen() {
     <>
       <Stack.Screen options={{ title: 'Catálogo', headerRight: () => <SyncBadge /> }} />
       <View style={st.container}>
+        {/* Subscription Warning Banner */}
+        {subscriptionWarning && (
+          <View style={st.warningBanner}>
+            <Ionicons name="warning-outline" size={18} color="#F59E0B" />
+            <Text style={st.warningText}>{subscriptionWarning}</Text>
+          </View>
+        )}
 
         {/* Search Bar */}
         <View style={st.searchBar}>
@@ -284,4 +291,23 @@ const st = StyleSheet.create({
   emptyText:       { fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 19 },
   retryBtn:        { marginTop: 20, backgroundColor: '#1c1c1c', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 28, borderWidth: 1, borderColor: '#EF4444' },
   retryBtnText:    { color: '#EF4444', fontWeight: '700', fontSize: 14 },
+
+  warningBanner: {
+    backgroundColor: '#3b2400',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#784d00',
+    gap: 10,
+  },
+  warningText: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
 });

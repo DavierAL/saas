@@ -42,3 +42,24 @@ export interface Order {
   readonly updated_at: string;
   readonly deleted_at: string | null;
 }
+
+export interface DailySalesTrend {
+  readonly date: string;
+  readonly sales: number;
+}
+
+export interface TopSellingItem {
+  readonly name: string;
+  readonly sales: number;
+}
+
+export interface RevenueByCategory {
+  readonly name: string;
+  readonly value: number;
+}
+
+export interface OrderAnalytics {
+  readonly daily_sales: readonly DailySalesTrend[];
+  readonly top_items: readonly TopSellingItem[];
+  readonly revenue_by_category: readonly RevenueByCategory[];
+}

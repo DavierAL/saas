@@ -100,11 +100,10 @@ const PAGE_SIZE = 20;
 
 export default function OrdersScreen() {
   const { tenantId } = useAuth();
-  const allOrders = useOrders(tenantId ?? '', 500);
+  const { orders: allOrders, loadMore, hasMore, isLoading } = useOrders(tenantId ?? '', PAGE_SIZE);
 
   const [search,     setSearch]     = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
-  const [sliceEnd,   setSliceEnd]   = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // ── filter + search pipeline ───────────────────────────────────────────────
@@ -129,7 +128,7 @@ export default function OrdersScreen() {
     return list;
   }, [allOrders, dateFilter, search]);
 
-  const displayed = useMemo(() => filtered.slice(0, sliceEnd), [filtered, sliceEnd]);
+  const displayed = filtered;
 
   const todayPaid = useMemo(
     () => allOrders.filter((o) => o.status === 'paid' && isToday(new Date(o.created_at))),
@@ -138,17 +137,23 @@ export default function OrdersScreen() {
   const todayTotal = useMemo(() => todayPaid.reduce((s, o) => s + o.total_amount, 0), [todayPaid]);
 
   const handleEndReached = useCallback(() => {
-    if (sliceEnd >= filtered.length) return;
+    if (!hasMore || loadingMore || search) return;
+    
     setLoadingMore(true);
+    // Add small delay for smoothness
     setTimeout(() => {
-      setSliceEnd((prev) => Math.min(prev + PAGE_SIZE, filtered.length));
+      loadMore();
       setLoadingMore(false);
     }, 150);
-  }, [sliceEnd, filtered.length]);
+  }, [hasMore, loadingMore, search, loadMore]);
 
   const handleFilterChange = (f: DateFilter) => {
     setDateFilter(f);
-    setSliceEnd(PAGE_SIZE);
+    // Pagination reset is handled by the hook resetting limit if tenant/params change,
+    // but here we might want to stay on PAGE_SIZE if we change filters.
+    // However, since we are doing local filtering on a reactive list, 
+    // real cursor-based server filtering would be different.
+    // For now, we keep the simplicity of reactive PowerSync.
   };
 
   return (
@@ -212,9 +217,9 @@ export default function OrdersScreen() {
 
         {/* Count hint */}
         <Text style={s.countHint}>
-          {filtered.length === 0
+          {displayed.length === 0
             ? 'Sin resultados'
-            : `${Math.min(sliceEnd, filtered.length)} de ${filtered.length} órdenes`}
+            : `${displayed.length} órdenes cargadas ${search ? 'filtradas' : ''}`}
         </Text>
 
         {/* List */}

@@ -21,6 +21,13 @@ import type { PowerSyncDatabase } from '@powersync/react-native';
 import { supabase } from '../lib/supabase/client';
 import type { SupabaseSession } from '../lib/supabase/client';
 import { initDatabase } from '../lib/powersync/database';
+import { 
+  remoteValidateSubscription, 
+  validateSubscription,
+  SqliteTenantRepository,
+  SupabaseRemoteValidator,
+} from '@saas-pos/db';
+
 
 // ─── JWT Claim Extractor ──────────────────────────────────────
 const getValidJwtPayload = (token: string | undefined): Record<string, unknown> | null => {
@@ -70,6 +77,7 @@ export interface AuthContextValue {
   isLoading: boolean;
   tenantId: string | null;
   role: string | null;
+  subscriptionWarning: string | null;
   signOut: () => Promise<void>;
 }
 
@@ -78,6 +86,7 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   tenantId: null,
   role: null,
+  subscriptionWarning: null,
   signOut: async () => {},
 });
 
@@ -85,25 +94,52 @@ export const useAuth = () => useContext(AuthContext);
 
 // ─── Database Provider ────────────────────────────────────────
 // Only mounts when we have a valid session (prevents unauthenticated DB init)
-function DatabaseProvider({ children }: { children: any }) {
+function DatabaseProvider({ 
+  tenantId, 
+  onWarning, 
+  children 
+}: { 
+  tenantId: string; 
+  onWarning: (warning: string | null) => void;
+  children: any 
+}) {
   const [db, setDb] = useState<PowerSyncDatabase | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     initDatabase()
-      .then((database) => {
-        if (!cancelled) setDb(database);
+      .then(async (database) => {
+        if (cancelled) return;
+        setDb(database);
+
+        // ── Step 4: Periodic Remote Validation ────────────────
+        // We trigger it as soon as the DB is ready
+        const repo = new SqliteTenantRepository(database);
+        const remoteValidator = new SupabaseRemoteValidator(supabase);
+        
+        // 1. Trigger remote validation (async, don't wait for it to finish initialization)
+        remoteValidateSubscription(tenantId, {
+          tenantRepo: repo,
+          remoteValidator,
+        }).then(async () => {
+          // 2. After remote validation (or failure), check local status to update UI warning
+          const status = await validateSubscription(tenantId, repo);
+          onWarning(status.warning ?? null);
+        });
+
+        // 3. Initial local check (in case we are offline)
+        const initialStatus = await validateSubscription(tenantId, repo);
+        onWarning(initialStatus.warning ?? null);
       })
       .catch((err: Error) => {
         console.error('[DatabaseProvider] init failed:', err.message);
       });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [tenantId]);
 
   if (!db) {
-    // DB initializing — hooks return empty arrays, UI shows skeletons
     return null;
   }
 
@@ -165,19 +201,24 @@ export function AppProvider({ children }: { children: any }) {
   const tenantId = extractClaim(activeSession?.access_token, 'tenant_id');
   const role     = extractClaim(activeSession?.access_token, 'role');
 
+  const [subscriptionWarning, setSubscriptionWarning] = useState<string | null>(null);
+
   const authValue: AuthContextValue = {
     session: activeSession,
     isLoading,
     tenantId,
     role,
+    subscriptionWarning,
     signOut,
   };
 
   return (
     <AuthContext.Provider value={authValue}>
-      {/* DB only initializes once session is confirmed */}
-      {activeSession ? (
-        <DatabaseProvider>{children}</DatabaseProvider>
+      {/* DB only initializes once session is confirmed and we have a tenantId */}
+      {activeSession && tenantId ? (
+        <DatabaseProvider tenantId={tenantId} onWarning={setSubscriptionWarning}>
+          {children}
+        </DatabaseProvider>
       ) : (
         children
       )}

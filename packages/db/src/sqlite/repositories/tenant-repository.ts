@@ -13,6 +13,7 @@ import type { Tenant } from '@saas-pos/domain';
 export interface ITenantRepository {
   findById(id: string): Promise<Tenant | null>;
   isSubscriptionActive(id: string): Promise<boolean>;
+  updateSubscription(id: string, validUntil: string, lastValidatedAt: string): Promise<void>;
 }
 
 export class SqliteTenantRepository implements ITenantRepository {
@@ -69,5 +70,16 @@ export class SqliteTenantRepository implements ITenantRepository {
 
     const validUntil = new Date(tenant.valid_until);
     return validUntil > new Date();
+  }
+
+  async updateSubscription(id: string, validUntil: string, lastValidatedAt: string): Promise<void> {
+    await this.db.execute(
+      `UPDATE tenants 
+       SET valid_until = ?, 
+           last_remote_validation_at = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      [validUntil, lastValidatedAt, new Date().toISOString(), id],
+    );
   }
 }

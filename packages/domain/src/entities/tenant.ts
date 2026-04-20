@@ -12,6 +12,7 @@ export interface Tenant {
   readonly industry_type: IndustryType;
   readonly modules_config: ModulesConfig;
   readonly valid_until: string; // ISO date string - paywall control
+  readonly last_remote_validation_at?: string; // [DOM-012] Tracking for periodic validation
   readonly currency: string;    // [DOM-008] Tenant-specific currency code
   readonly created_at: string;
   readonly updated_at: string;

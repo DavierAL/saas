@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { ErrorScreen } from './ErrorScreen';
 
 interface Props {
@@ -27,6 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught error:', error, errorInfo);
+    Sentry.captureException(error, { extra: { errorInfo } });
   }
 
   public resetError = () => {

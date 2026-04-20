@@ -17,6 +17,7 @@ const tenants = new Table(
     industry_type:   { type: ColumnType.TEXT },
     modules_config:  { type: ColumnType.TEXT },
     valid_until:     { type: ColumnType.TEXT },
+    last_remote_validation_at: { type: ColumnType.TEXT },
     created_at:      { type: ColumnType.TEXT },
     updated_at:      { type: ColumnType.TEXT },
     deleted_at:      { type: ColumnType.TEXT },
