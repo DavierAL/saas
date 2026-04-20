@@ -59,4 +59,38 @@ describe('SqliteItemRepository', () => {
       [expect.any(String), expect.any(String), 'item-1', 'tenant-1']
     );
   });
+
+  test('findById: formats query correctly', async () => {
+    db.get.mockResolvedValue(null);
+    await repo.findById('item-1', 'tenant-1');
+
+    expect(db.get).toHaveBeenCalledWith(
+      expect.stringMatching(/SELECT.*FROM items WHERE id = \?/is),
+      ['item-1', 'tenant-1']
+    );
+  });
+
+  test('findByType: filters by type', async () => {
+    db.getAll.mockResolvedValue([]);
+    await repo.findByType('service', 'tenant-1');
+
+    expect(db.getAll).toHaveBeenCalledWith(
+      expect.stringMatching(/WHERE tenant_id = \? AND type = \?/is),
+      ['tenant-1', 'service']
+    );
+  });
+
+  test('update: builds dynamic SQL for partial updates', async () => {
+    await repo.update('item-1', { price: 2000, stock: 5 }, 'tenant-1');
+
+    expect(db.execute).toHaveBeenCalledWith(
+      expect.stringMatching(/UPDATE items SET price = \?, stock = \?, updated_at = \?/is),
+      [2000, 5, expect.any(String), 'item-1', 'tenant-1']
+    );
+  });
+
+  test('update: no-op if patch is empty', async () => {
+    await repo.update('item-1', {}, 'tenant-1');
+    expect(db.execute).not.toHaveBeenCalled();
+  });
 });

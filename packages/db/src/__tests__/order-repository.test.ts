@@ -77,4 +77,42 @@ describe('SqliteOrderRepository', () => {
       ['order-1', 'tenant-1']
     );
   });
+
+  test('findByTenant: handles limit and cursor pagination', async () => {
+    db.getAll.mockResolvedValue([]);
+    await repo.findByTenant('tenant-1', '2026-04-19T21:00:00Z', 10);
+
+    expect(db.getAll).toHaveBeenCalledWith(
+      expect.stringMatching(/WHERE tenant_id = \? AND deleted_at IS NULL AND created_at < \?/is),
+      ['tenant-1', '2026-04-19T21:00:00Z', 10]
+    );
+  });
+
+  test('updateStatus: executes update SQL', async () => {
+    await repo.updateStatus('order-1', 'cancelled', 'tenant-1');
+
+    expect(db.execute).toHaveBeenCalledWith(
+      expect.stringMatching(/UPDATE orders SET status = \?, updated_at = \?/is),
+      ['cancelled', expect.any(String), 'order-1', 'tenant-1']
+    );
+  });
+
+  test('getLinesByOrderId: fetches lines for an order', async () => {
+    db.getAll.mockResolvedValue([]);
+    await repo.getLinesByOrderId('order-1', 'tenant-1');
+
+    expect(db.getAll).toHaveBeenCalledWith(
+      expect.stringMatching(/SELECT.*FROM order_lines.*WHERE order_id = \? AND tenant_id = \?/is),
+      ['order-1', 'tenant-1']
+    );
+  });
+
+  test('insertOrderWithLines: propagates errors for rollback', async () => {
+    tx.execute.mockRejectedValueOnce(new Error('DB Error'));
+
+    const order = { id: 'o1' } as any;
+    const promise = repo.insertOrderWithLines(order, []);
+
+    await expect(promise).rejects.toThrow('DB Error');
+  });
 });

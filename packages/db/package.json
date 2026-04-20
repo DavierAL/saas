@@ -11,7 +11,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@saas-pos/domain": "*"
+    "@saas-pos/domain": "*",
+    "@supabase/supabase-js": "2.103.3"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

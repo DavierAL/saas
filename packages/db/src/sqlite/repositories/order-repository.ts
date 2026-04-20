@@ -14,7 +14,7 @@ import { nowISO } from '@saas-pos/utils';
 
 export interface IOrderRepository {
   insertOrderWithLines(order: Order, lines: readonly OrderLine[]): Promise<void>;
-  findByTenant(tenantId: string, limit?: number): Promise<Order[]>;
+  findByTenant(tenantId: string, cursor?: string, limit?: number): Promise<Order[]>;
   findById(id: string, tenantId: string): Promise<Order | null>;
   updateStatus(id: string, status: Order['status'], tenantId: string): Promise<void>;
   getLinesByOrderId(orderId: string, tenantId: string): Promise<OrderLine[]>;
@@ -75,16 +75,26 @@ export class SqliteOrderRepository implements IOrderRepository {
     });
   }
 
-  async findByTenant(tenantId: string, limit = 50): Promise<Order[]> {
-    return this.db.getAll<Order>(
+  async findByTenant(tenantId: string, cursor?: string, limit = 50): Promise<Order[]> {
+    const whereFlags = ['tenant_id = ?', 'deleted_at IS NULL'];
+    const params: unknown[] = [tenantId];
+
+    if (cursor) {
+      // [DB-002] Cursor-based pagination: fetch items older than the cursor date
+      whereFlags.push('created_at < ?');
+      params.push(cursor);
+    }
+
+    const rows = await this.db.getAll<Order>(
       `SELECT id, tenant_id, user_id, status, total_amount, currency,
               created_at, updated_at, deleted_at
        FROM orders
-       WHERE tenant_id = ? AND deleted_at IS NULL
+       WHERE ${whereFlags.join(' AND ')}
        ORDER BY created_at DESC
        LIMIT ?`,
-      [tenantId, limit],
+      [...params, limit],
     );
+    return rows;
   }
 
   async findById(id: string, tenantId: string): Promise<Order | null> {
