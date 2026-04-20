@@ -85,7 +85,9 @@ Hacerlo resulta en doble decremento. El stock se gestiona enteramente dentro de 
 ### Repositorios: solo persistencia
 Los métodos de repositorio (`SqliteItemRepository`, `SqliteOrderRepository`, etc.) SOLO ejecutan
 queries. Sin validaciones de negocio, sin llamadas a otros repos, sin lógica condicional compleja.
-Toda orquestación va en los use cases de `packages/application`.
+- **Persistencia**: Solo los archivos en `packages/db` pueden usar el cliente de Supabase directamente o SQL.
+- **Tokens de Diseño**: No se permiten colores hexadecimales literales en los archivos de componentes. Usar siempre los tokens definidos en `@saas-pos/ui`.
+- **Casos de Uso**: La lógica de negocio debe residir en los use cases de `packages/application`.
 
 ### JSON en SQLite
 `modules_config` se almacena como TEXT en SQLite. Al leer, siempre usar try/catch:

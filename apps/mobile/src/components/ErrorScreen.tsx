@@ -1,47 +1,48 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, SafeAreaView, Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { View, Text, StyleSheet, SafeAreaView, Platform, ScrollView } from 'react-native';
+import { colors, spacing, typography, radius, Button } from '@saas-pos/ui';
 
 interface ErrorScreenProps {
   error: Error;
   resetError: () => void;
 }
 
-/**
- * ErrorScreen — Premium fallback for application crashes.
- * Used by the Root Error Boundary.
- */
 export function ErrorScreen({ error, resetError }: ErrorScreenProps) {
+  const isDev = __DEV__;
+
   return (
     <SafeAreaView style={s.container}>
-      <StatusBar style="light" />
-      <View style={s.card}>
-        <View style={s.iconWrap}>
-          <Text style={s.icon}>✕</Text>
+      <View style={s.content}>
+        <View style={s.iconContainer}>
+          <Text style={s.icon}>⚠</Text>
         </View>
 
-        <Text style={s.title}>Algo salió mal</Text>
-        <Text style={s.desc}>
-          La aplicación encontró un error inesperado y no pudo continuar.
-        </Text>
+        <View style={s.card}>
+          <Text style={s.title}>Algo salió mal</Text>
+          <Text style={s.message}>
+            Ha ocurrido un error inesperado en la aplicación.
+          </Text>
 
-        <View style={s.errorDetailBox}>
-          <Text style={s.errorLabel}>Detalle técnico:</Text>
-          <Text style={s.errorText} numberOfLines={3}>
-            {error.message || 'Error desconocido'}
+          {isDev && (
+            <View style={s.debugContainer}>
+              <Text style={s.debugTitle}>Detalles del error (Solo Dev):</Text>
+              <ScrollView style={s.debugScroll} nestedScrollEnabled>
+                <Text style={s.debugText}>{error.message}</Text>
+                <Text style={s.debugStack}>{error.stack}</Text>
+              </ScrollView>
+            </View>
+          )}
+
+          <Button 
+            label="Reintentar" 
+            onPress={resetError}
+            variant="primary"
+          />
+          
+          <Text style={s.footer}>
+            Si el problema persiste, contacta a soporte.
           </Text>
         </View>
-
-        <Pressable
-          style={({ pressed }) => [s.btn, pressed && s.btnPressed]}
-          onPress={resetError}
-        >
-          <Text style={s.btnText}>Reintentar</Text>
-        </Pressable>
-
-        <Text style={s.footer}>
-          Si el problema persiste, contacta al soporte técnico.
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -50,99 +51,85 @@ export function ErrorScreen({ error, resetError }: ErrorScreenProps) {
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f0f',
-    alignItems: 'center',
+    backgroundColor: colors.bg.base,
+  },
+  content: {
+    flex: 1,
+    padding: spacing[6],
     justifyContent: 'center',
-    padding: 24,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent.redDim,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing[6],
+    borderWidth: 1,
+    borderColor: colors.accent.red,
+  },
+  icon: {
+    fontSize: 32,
+    color: colors.accent.red,
   },
   card: {
     width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#1c1c1c',
-    borderRadius: 16,
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.xl,
+    padding: spacing[6],
     borderWidth: 1,
-    borderColor: '#272727',
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 10,
-  },
-  iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2b0d0d',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#EF444430',
-  },
-  icon: {
-    fontSize: 28,
-    color: '#EF4444',
-    fontWeight: '700',
+    borderColor: colors.border.default,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#ededed',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  desc: {
-    fontSize: 14,
-    color: '#9b9b9b',
+    fontSize: 20,
+    fontWeight: typography.weight.bold,
+    color: colors.text.primary,
     textAlign: 'center',
+    marginBottom: spacing[2],
+  },
+  message: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing[6],
     lineHeight: 20,
-    marginBottom: 24,
   },
-  errorDetailBox: {
-    width: '100%',
-    backgroundColor: '#0f0f0f',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 24,
+  debugContainer: {
+    backgroundColor: colors.bg.base,
+    borderRadius: radius.md,
+    padding: spacing[3],
+    marginBottom: spacing[6],
     borderWidth: 1,
-    borderColor: '#272727',
+    borderColor: colors.border.default,
+    maxHeight: 200,
   },
-  errorLabel: {
+  debugTitle: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#666',
+    fontWeight: typography.weight.bold,
+    color: colors.text.muted,
+    marginBottom: spacing[2],
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 6,
   },
-  errorText: {
-    fontSize: 13,
-    color: '#EF4444',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  debugScroll: {
+    flexGrow: 0,
   },
-  btn: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#3ECF8E',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+  debugText: {
+    fontSize: 12,
+    color: colors.accent.red,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginBottom: 4,
   },
-  btnPressed: {
-    backgroundColor: '#2EBF7E',
-    transform: [{ scale: 0.98 }],
-  },
-  btnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f0f0f',
+  debugStack: {
+    fontSize: 10,
+    color: colors.text.muted,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   footer: {
     fontSize: 12,
-    color: '#444',
+    color: colors.text.muted,
     textAlign: 'center',
+    marginTop: spacing[6],
   },
 });

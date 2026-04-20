@@ -14,6 +14,7 @@ import { FlashList } from '@shopify/flash-list';
 const AnyFlashList = FlashList as any;
 import { Stack, router } from 'expo-router';
 import { useState, useMemo, useCallback } from 'react';
+import { colors, spacing, typography, radius, Badge } from '@saas-pos/ui';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useOrders } from '../../src/hooks/useOrders';
 import { formatMoney, createMoney } from '@saas-pos/domain';
@@ -24,14 +25,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 type DateFilter = 'all' | 'today' | 'week' | 'month';
 
-const STATUS_CONFIG = {
-  paid:               { label: 'Pagado',    color: '#3ECF8E', bg: '#0d2b1e' },
-  pending:            { label: 'Pendiente', color: '#F59E0B', bg: '#2b1e0d' },
-  cancelled:          { label: 'Cancelado', color: '#EF4444', bg: '#2b0d0d' },
-  refunded:           { label: 'Reembolsado',color: '#818CF8', bg: '#14143b' },
-  partially_refunded: { label: 'Reem. Parcial',color: '#818CF8', bg: '#14143b' },
-  voided:             { label: 'Anulado',   color: '#9b9b9b', bg: '#1c1c1c' },
-} as const;
+const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
+  paid:               { label: 'Pagado',    variant: 'success' },
+  pending:            { label: 'Pendiente', variant: 'warning' },
+  cancelled:          { label: 'Cancelado', variant: 'error' },
+  refunded:           { label: 'Reembolsado',variant: 'info' },
+  partially_refunded: { label: 'Reem. Parcial',variant: 'info' },
+  voided:             { label: 'Anulado',   variant: 'neutral' },
+};
 
 /** [UX-015] Returns start-of-day as a Date, using the device's locale timezone */
 function startOfDay(d: Date): Date {
@@ -82,12 +83,12 @@ function OrderRow({ order, onPress }: { order: Order; onPress: () => void }) {
         <Text style={s.rowId} numberOfLines={1}>#{order.id.split('-')[0]!.toUpperCase()}</Text>
         <Text style={s.rowDate}>{dateStr}</Text>
       </View>
-      <View style={[s.statusPill, { backgroundColor: cfg.bg }]}>
-        <Text style={[s.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+      <View style={{ marginHorizontal: spacing[2] }}>
+        <Badge label={cfg.label} variant={cfg.variant} dim={true} />
       </View>
       <View style={s.rowRight}>
         <Text style={s.rowTotal}>{formatMoney(createMoney(order.total_amount, order.currency))}</Text>
-        <Ionicons name="chevron-forward" size={14} color="#555" />
+        <Ionicons name="chevron-forward" size={14} color={colors.text.muted} />
       </View>
     </Pressable>
   );
@@ -99,9 +100,6 @@ const PAGE_SIZE = 20;
 
 export default function OrdersScreen() {
   const { tenantId } = useAuth();
-
-  // [UX-013] We load a large buffer from PowerSync (already indexed/local),
-  // and paginate the *display* list client-side with sliceEnd.
   const allOrders = useOrders(tenantId ?? '', 500);
 
   const [search,     setSearch]     = useState('');
@@ -113,7 +111,6 @@ export default function OrdersScreen() {
   const filtered = useMemo(() => {
     let list = allOrders;
 
-    // Date filter
     if (dateFilter !== 'all') {
       list = list.filter((o) => {
         const d = new Date(o.created_at);
@@ -124,7 +121,6 @@ export default function OrdersScreen() {
       });
     }
 
-    // Text search by order ID prefix
     if (search.trim()) {
       const q = search.trim().toUpperCase();
       list = list.filter((o) => o.id.toUpperCase().startsWith(q));
@@ -135,18 +131,15 @@ export default function OrdersScreen() {
 
   const displayed = useMemo(() => filtered.slice(0, sliceEnd), [filtered, sliceEnd]);
 
-  // ── today stats (paid only, timezone-safe) ─────────────────────────────────
   const todayPaid = useMemo(
     () => allOrders.filter((o) => o.status === 'paid' && isToday(new Date(o.created_at))),
     [allOrders],
   );
   const todayTotal = useMemo(() => todayPaid.reduce((s, o) => s + o.total_amount, 0), [todayPaid]);
 
-  // ── infinite scroll handler ────────────────────────────────────────────────
   const handleEndReached = useCallback(() => {
     if (sliceEnd >= filtered.length) return;
     setLoadingMore(true);
-    // Small timeout to let RN render the current frame first
     setTimeout(() => {
       setSliceEnd((prev) => Math.min(prev + PAGE_SIZE, filtered.length));
       setLoadingMore(false);
@@ -155,7 +148,7 @@ export default function OrdersScreen() {
 
   const handleFilterChange = (f: DateFilter) => {
     setDateFilter(f);
-    setSliceEnd(PAGE_SIZE); // Reset pagination when filter changes
+    setSliceEnd(PAGE_SIZE);
   };
 
   return (
@@ -163,8 +156,8 @@ export default function OrdersScreen() {
       <Stack.Screen options={{
         title: 'Órdenes',
         headerShown: true,
-        headerStyle: { backgroundColor: '#0f0f0f' },
-        headerTintColor: '#ededed',
+        headerStyle: { backgroundColor: colors.bg.base },
+        headerTintColor: colors.text.primary,
       }} />
 
       <View style={s.container}>
@@ -176,18 +169,18 @@ export default function OrdersScreen() {
           </View>
           <View style={s.todayDivider} />
           <View style={s.todayStat}>
-            <Text style={[s.todayValue, { color: '#3ECF8E' }]}>{formatMoney(createMoney(todayTotal, 'PEN'))}</Text>
+            <Text style={[s.todayValue, { color: colors.status.success }]}>{formatMoney(createMoney(todayTotal, 'PEN'))}</Text>
             <Text style={s.todayLabel}>Total hoy</Text>
           </View>
         </View>
 
         {/* Search Bar */}
         <View style={s.searchBar}>
-          <Ionicons name="search" size={16} color="#555" style={{ marginRight: 8 }} />
+          <Ionicons name="search" size={16} color={colors.text.muted} style={{ marginRight: spacing[2] }} />
           <TextInput
             style={s.searchInput}
             placeholder="Buscar por # de orden..."
-            placeholderTextColor="#555"
+            placeholderTextColor={colors.text.muted}
             value={search}
             onChangeText={(t) => { setSearch(t); setSliceEnd(PAGE_SIZE); }}
             returnKeyType="search"
@@ -195,7 +188,7 @@ export default function OrdersScreen() {
           />
           {search.length > 0 && (
             <Pressable hitSlop={8} onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={16} color="#555" />
+              <Ionicons name="close-circle" size={16} color={colors.text.muted} />
             </Pressable>
           )}
         </View>
@@ -241,13 +234,13 @@ export default function OrdersScreen() {
           ListFooterComponent={
             loadingMore ? (
               <View style={s.loadingFooter}>
-                <ActivityIndicator color="#3ECF8E" size="small" />
+                <ActivityIndicator color={colors.status.success} size="small" />
               </View>
             ) : null
           }
           ListEmptyComponent={
             <View style={s.empty}>
-              <Ionicons name="receipt-outline" size={48} color="#333" />
+              <Ionicons name="receipt-outline" size={48} color={colors.bg.surface} />
               <Text style={s.emptyTitle}>Sin órdenes</Text>
               <Text style={s.emptyText}>
                 {search ? 'No se encontraron órdenes con ese ID' : 'Las ventas aparecerán aquí'}
@@ -261,45 +254,43 @@ export default function OrdersScreen() {
 }
 
 const s = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: '#0f0f0f' },
+  container:     { flex: 1, backgroundColor: colors.bg.base },
 
   // Stats bar
-  todayBar:      { flexDirection: 'row', backgroundColor: '#1c1c1c', borderBottomWidth: 1, borderBottomColor: '#272727', paddingVertical: 14 },
+  todayBar:      { flexDirection: 'row', backgroundColor: colors.bg.surface, borderBottomWidth: 1, borderBottomColor: colors.border.default, paddingVertical: spacing[4] },
   todayStat:     { flex: 1, alignItems: 'center' },
-  todayValue:    { fontSize: 20, fontWeight: '700', color: '#ededed', letterSpacing: -0.5 },
-  todayLabel:    { fontSize: 10, color: '#666', marginTop: 2, fontWeight: '500', letterSpacing: 0.5, textTransform: 'uppercase' },
-  todayDivider:  { width: 1, backgroundColor: '#272727', marginVertical: 4 },
+  todayValue:    { fontSize: 20, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight },
+  todayLabel:    { fontSize: 10, color: colors.text.muted, marginTop: 2, fontWeight: typography.weight.medium, letterSpacing: typography.tracking.wide, textTransform: 'uppercase' },
+  todayDivider:  { width: 1, backgroundColor: colors.border.default, marginVertical: 4 },
 
   // Search
-  searchBar:    { flexDirection: 'row', alignItems: 'center', margin: 12, marginBottom: 8, backgroundColor: '#1c1c1c', borderRadius: 8, borderWidth: 1, borderColor: '#272727', paddingHorizontal: 12, height: 40 },
-  searchInput:  { flex: 1, color: '#ededed', fontSize: 14 },
+  searchBar:    { flexDirection: 'row', alignItems: 'center', margin: spacing[3], marginBottom: spacing[2], backgroundColor: colors.bg.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border.default, paddingHorizontal: spacing[3], height: 40 },
+  searchInput:  { flex: 1, color: colors.text.primary, fontSize: 14 },
 
   // Filter chips
-  chips:        { flexDirection: 'row', paddingHorizontal: 12, gap: 8, marginBottom: 4 },
-  chip:         { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#272727', backgroundColor: '#1c1c1c' },
-  chipActive:   { backgroundColor: '#0d2b1e', borderColor: '#3ECF8E' },
-  chipText:     { fontSize: 12, color: '#666', fontWeight: '600' },
-  chipTextActive: { color: '#3ECF8E' },
+  chips:        { flexDirection: 'row', paddingHorizontal: spacing[3], gap: spacing[2], marginBottom: spacing[1] },
+  chip:         { paddingHorizontal: spacing[3], paddingVertical: spacing[1.5], borderRadius: radius.full, borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.bg.surface },
+  chipActive:   { backgroundColor: colors.accent.greenDim, borderColor: colors.accent.green },
+  chipText:     { fontSize: 12, color: colors.text.muted, fontWeight: typography.weight.semibold },
+  chipTextActive: { color: colors.accent.green },
 
   // Count hint
-  countHint:    { fontSize: 11, color: '#444', paddingHorizontal: 16, paddingBottom: 6, paddingTop: 2 },
+  countHint:    { fontSize: 11, color: colors.text.muted, paddingHorizontal: spacing[4], paddingBottom: spacing[1.5], paddingTop: spacing[0.5] },
 
   // Row
-  row:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 },
-  rowPressed:   { backgroundColor: '#1a1a1a' },
+  row:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[3] },
+  rowPressed:   { backgroundColor: colors.bg.elevated },
   rowLeft:      { flex: 1 },
-  rowId:        { fontSize: 13, color: '#ededed', fontWeight: '600', fontVariant: ['tabular-nums'] },
-  rowDate:      { fontSize: 11, color: '#666', marginTop: 2 },
-  statusPill:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, marginHorizontal: 10 },
-  statusText:   { fontSize: 11, fontWeight: '600' },
-  rowRight:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rowTotal:     { fontSize: 15, fontWeight: '700', color: '#ededed', letterSpacing: -0.3, minWidth: 72, textAlign: 'right' },
+  rowId:        { fontSize: 13, color: colors.text.primary, fontWeight: typography.weight.semibold },
+  rowDate:      { fontSize: 11, color: colors.text.muted, marginTop: 2 },
+  rowRight:     { flexDirection: 'row', alignItems: 'center', gap: spacing[1] },
+  rowTotal:     { fontSize: 15, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight, minWidth: 72, textAlign: 'right' },
 
-  sep:          { height: 1, backgroundColor: '#181818' },
+  sep:          { height: 1, backgroundColor: colors.bg.surface },
   loadingFooter: { paddingVertical: 20, alignItems: 'center' },
 
   // Empty
-  empty:        { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
-  emptyTitle:   { fontSize: 16, color: '#444', fontWeight: '600', marginTop: 16, marginBottom: 6 },
-  emptyText:    { fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 18 },
+  empty:        { alignItems: 'center', paddingTop: 60, paddingHorizontal: spacing[8] },
+  emptyTitle:   { fontSize: 16, color: colors.text.secondary, fontWeight: typography.weight.semibold, marginTop: 16, marginBottom: 6 },
+  emptyText:    { fontSize: 13, color: colors.text.muted, textAlign: 'center', lineHeight: 18 },
 });

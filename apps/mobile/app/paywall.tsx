@@ -11,6 +11,7 @@ import { getSubscriptionStatus } from '@saas-pos/domain';
 import { useEffect, useState } from 'react';
 import { supabase } from '../src/lib/supabase/client';
 import { useRouter } from 'expo-router';
+import { colors, spacing, typography, radius, Button } from '@saas-pos/ui';
 import { useAuth } from '../src/providers/AppProvider';
 
 export default function PaywallScreen() {
@@ -22,8 +23,6 @@ export default function PaywallScreen() {
   const status = tenant ? getSubscriptionStatus(tenant) : null;
   const expiredDays = status ? Math.abs(status.daysRemaining) : 0;
 
-  // [AUTH-010] Hardened Server-side Check
-  // Prevents local device clock manipulation from bypassing the lock indefinitely
   useEffect(() => {
     if (!tenantId) return;
 
@@ -41,7 +40,6 @@ export default function PaywallScreen() {
           const validUntil = new Date(data.valid_until);
           
           if (validUntil > now) {
-            console.log('[Paywall] Server says subscription is actually valid. Redirecting...');
             router.replace('/(tabs)');
           }
         }
@@ -78,12 +76,12 @@ export default function PaywallScreen() {
         <View style={s.divider} />
 
         {/* Contact CTA */}
-        <Pressable
-          style={({ pressed }) => [s.primaryBtn, pressed && s.primaryBtnPressed]}
+        <Button
+          label="Renovar suscripción"
+          variant="primary"
           onPress={() => Linking.openURL('https://wa.me/?text=Hola,%20quiero%20renovar%20mi%20plan%20SaaS%20POS')}
-        >
-          <Text style={s.primaryBtnText}>Renovar suscripción</Text>
-        </Pressable>
+          style={{ width: '100%', marginBottom: spacing[2] }}
+        />
 
         <Pressable style={s.secondaryBtn} onPress={signOut}>
           <Text style={s.secondaryBtnText}>Cerrar sesión</Text>
@@ -101,72 +99,61 @@ export default function PaywallScreen() {
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f0f',
+    backgroundColor: colors.bg.base,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing[6],
   },
   card: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: '#1c1c1c',
-    borderRadius: 12,
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: '#272727',
-    padding: 28,
+    padding: spacing[8],
     alignItems: 'center',
   },
   iconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#2b1e0d',
+    borderRadius: radius.full,
+    backgroundColor: colors.accent.amberDim,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.accent.amber,
   },
-  icon: { fontSize: 26 },
+  icon: { fontSize: 26, color: colors.accent.amber },
 
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#ededed',
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    fontWeight: typography.weight.bold,
+    color: colors.text.primary,
+    letterSpacing: typography.tracking.tight,
+    marginBottom: spacing[2],
     textAlign: 'center',
   },
   desc: {
     fontSize: 14,
-    color: '#9b9b9b',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: spacing[2],
   },
   note: {
     fontSize: 13,
-    color: '#555',
+    color: colors.text.muted,
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 20,
+    marginBottom: spacing[5],
   },
   divider: {
     width: '100%',
     height: 1,
-    backgroundColor: '#272727',
-    marginBottom: 20,
+    backgroundColor: colors.border.default,
+    marginBottom: spacing[5],
   },
-
-  primaryBtn: {
-    width: '100%',
-    height: 46,
-    backgroundColor: '#3ECF8E',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  primaryBtnPressed: { backgroundColor: '#2EBF7E' },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#0f0f0f' },
 
   secondaryBtn: {
     width: '100%',
@@ -174,7 +161,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryBtnText: { fontSize: 13, color: '#555' },
+  secondaryBtnText: { fontSize: 13, color: colors.text.muted },
 
-  bottomNote: { fontSize: 11, color: '#333', marginTop: 20, textAlign: 'center' },
+  bottomNote: { fontSize: 11, color: colors.text.muted, marginTop: spacing[5], textAlign: 'center' },
 });

@@ -13,20 +13,21 @@ import {
   View, Text, StyleSheet, Pressable, ScrollView,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { colors, spacing, typography, radius, Badge } from '@saas-pos/ui';
 import { useAuth } from '../src/providers/AppProvider';
 import { useOrders } from '../src/hooks/useOrders';
 import { useOrderLines } from '../src/hooks/useOrderLines';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
 
-const STATUS_CONFIG = {
-  paid:               { label: 'Pagado',    color: '#3ECF8E', bg: '#0d2b1e' },
-  pending:            { label: 'Pendiente', color: '#F59E0B', bg: '#2b1e0d' },
-  cancelled:          { label: 'Cancelado', color: '#EF4444', bg: '#2b0d0d' },
-  refunded:           { label: 'Reembolsado',color: '#818CF8', bg: '#14143b' },
-  partially_refunded: { label: 'Reem. Parcial',color: '#818CF8', bg: '#14143b' },
-  voided:             { label: 'Anulado',   color: '#9b9b9b', bg: '#1c1c1c' },
-} as const;
+const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
+  paid:               { label: 'Pagado',    variant: 'success' },
+  pending:            { label: 'Pendiente', variant: 'warning' },
+  cancelled:          { label: 'Cancelado', variant: 'error' },
+  refunded:           { label: 'Reembolsado',variant: 'info' },
+  partially_refunded: { label: 'Reem. Parcial',variant: 'info' },
+  voided:             { label: 'Anulado',   variant: 'neutral' },
+};
 
 function SectionHeader({ title }: { title: string }) {
   return <Text style={s.sectionHeader}>{title}</Text>;
@@ -43,9 +44,14 @@ export default function OrderDetailScreen() {
   if (!order) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Detalle', headerShown: true, headerStyle: { backgroundColor: '#0f0f0f' }, headerTintColor: '#ededed' }} />
+        <Stack.Screen options={{ 
+          title: 'Detalle', 
+          headerShown: true, 
+          headerStyle: { backgroundColor: colors.bg.base }, 
+          headerTintColor: colors.text.primary 
+        }} />
         <View style={s.centered}>
-          <Ionicons name="alert-circle-outline" size={48} color="#555" />
+          <Ionicons name="alert-circle-outline" size={48} color={colors.text.muted} />
           <Text style={s.notFoundText}>Orden no encontrada</Text>
           <Pressable style={s.backBtn} onPress={() => router.back()}>
             <Text style={s.backBtnText}>Volver</Text>
@@ -66,18 +72,16 @@ export default function OrderDetailScreen() {
       <Stack.Screen options={{
         title: `Orden #${orderId8}`,
         headerShown: true,
-        headerStyle: { backgroundColor: '#0f0f0f' },
-        headerTintColor: '#ededed',
+        headerStyle: { backgroundColor: colors.bg.base },
+        headerTintColor: colors.text.primary,
       }} />
 
-      <ScrollView style={s.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView style={s.container} contentContainerStyle={{ paddingBottom: spacing[10] }}>
         {/* Order Header Card */}
         <View style={s.card}>
           <View style={s.cardRow}>
             <Text style={s.orderId}>#{orderId8}</Text>
-            <View style={[s.statusPill, { backgroundColor: cfg.bg }]}>
-              <Text style={[s.statusText, { color: cfg.color }]}>{cfg.label}</Text>
-            </View>
+            <Badge label={cfg.label} variant={cfg.variant} dim={true} />
           </View>
           <Text style={s.dateText}>{dateStr} · {timeStr}</Text>
           <Text style={s.fullId} numberOfLines={1}>ID: {order.id}</Text>
@@ -120,7 +124,7 @@ export default function OrderDetailScreen() {
           </View>
           <View style={s.totalDivider} />
           <View style={s.totalRow}>
-            <Text style={[s.totalLabel, { fontSize: 16, color: '#ededed', fontWeight: '700' }]}>Total</Text>
+            <Text style={[s.totalLabel, { fontSize: 16, color: colors.text.primary, fontWeight: typography.weight.bold }]}>Total</Text>
             <Text style={s.grandTotal}>{formatMoney(createMoney(order.total_amount, order.currency))}</Text>
           </View>
         </View>
@@ -128,10 +132,10 @@ export default function OrderDetailScreen() {
         {/* Actions */}
         <SectionHeader title="Acciones" />
         <View style={s.card}>
-          <Pressable style={({ pressed }) => [s.actionBtn, pressed && { opacity: 0.7 }]}>
-            <Ionicons name="print-outline" size={18} color="#3ECF8E" />
+          <Pressable style={({ pressed }) => [s.actionBtn, pressed && { backgroundColor: colors.bg.elevated }]}>
+            <Ionicons name="print-outline" size={18} color={colors.status.success} />
             <Text style={s.actionBtnText}>Reimprimir Recibo</Text>
-            <Ionicons name="chevron-forward" size={14} color="#555" style={{ marginLeft: 'auto' }} />
+            <Ionicons name="chevron-forward" size={14} color={colors.text.muted} style={{ marginLeft: 'auto' }} />
           </Pressable>
         </View>
       </ScrollView>
@@ -140,39 +144,37 @@ export default function OrderDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: '#0f0f0f' },
-  centered:       { flex: 1, backgroundColor: '#0f0f0f', alignItems: 'center', justifyContent: 'center', gap: 16 },
-  notFoundText:   { fontSize: 16, color: '#555' },
-  backBtn:        { backgroundColor: '#1c1c1c', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 24, borderWidth: 1, borderColor: '#272727' },
-  backBtnText:    { color: '#ededed', fontSize: 14, fontWeight: '600' },
+  container:      { flex: 1, backgroundColor: colors.bg.base },
+  centered:       { flex: 1, backgroundColor: colors.bg.base, alignItems: 'center', justifyContent: 'center', gap: spacing[4] },
+  notFoundText:   { fontSize: 16, color: colors.text.muted },
+  backBtn:        { backgroundColor: colors.bg.surface, borderRadius: radius.md, paddingVertical: 10, paddingHorizontal: 24, borderWidth: 1, borderColor: colors.border.default },
+  backBtnText:    { color: colors.text.primary, fontSize: 14, fontWeight: typography.weight.semibold },
 
-  card:           { backgroundColor: '#1c1c1c', borderRadius: 12, borderWidth: 1, borderColor: '#272727', marginHorizontal: 16, marginBottom: 8, overflow: 'hidden' },
-  cardRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
-  orderId:        { fontSize: 20, fontWeight: '800', color: '#ededed', letterSpacing: -0.5 },
-  statusPill:     { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  statusText:     { fontSize: 12, fontWeight: '700' },
-  dateText:       { fontSize: 13, color: '#9b9b9b', paddingHorizontal: 16, paddingBottom: 4 },
-  fullId:         { fontSize: 10, color: '#3a3a3a', paddingHorizontal: 16, paddingBottom: 14, fontVariant: ['tabular-nums'] },
+  card:           { backgroundColor: colors.bg.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border.default, marginHorizontal: spacing[4], marginBottom: spacing[2], overflow: 'hidden' },
+  cardRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing[4], paddingTop: spacing[4], paddingBottom: spacing[1] },
+  orderId:        { fontSize: 20, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight },
+  dateText:       { fontSize: 13, color: colors.text.secondary, paddingHorizontal: spacing[4], paddingBottom: spacing[1] },
+  fullId:         { fontSize: 10, color: colors.text.muted, paddingHorizontal: spacing[4], paddingBottom: spacing[4], fontVariant: ['tabular-nums'] },
 
-  sectionHeader:  { fontSize: 11, fontWeight: '600', color: '#555', letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  sectionHeader:  { fontSize: 11, fontWeight: typography.weight.semibold, color: colors.text.muted, letterSpacing: typography.tracking.wider, textTransform: 'uppercase', paddingHorizontal: spacing[5], paddingTop: spacing[4], paddingBottom: spacing[2] },
 
-  lineRow:        { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 12 },
+  lineRow:        { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: spacing[4], paddingVertical: spacing[3] },
   lineLeft:       { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  lineQty:        { fontSize: 13, color: '#9b9b9b', fontWeight: '600', minWidth: 28 },
-  lineName:       { fontSize: 13, color: '#ededed', flex: 1 },
+  lineQty:        { fontSize: 13, color: colors.text.secondary, fontWeight: typography.weight.semibold, minWidth: 28 },
+  lineName:       { fontSize: 13, color: colors.text.primary, flex: 1 },
   lineRight:      { alignItems: 'flex-end' },
-  lineUnit:       { fontSize: 11, color: '#666' },
-  lineSubtotal:   { fontSize: 14, fontWeight: '700', color: '#ededed', marginTop: 2 },
-  lineSep:        { height: 1, backgroundColor: '#1e1e1e', marginHorizontal: 16 },
+  lineUnit:       { fontSize: 11, color: colors.text.muted },
+  lineSubtotal:   { fontSize: 14, fontWeight: typography.weight.bold, color: colors.text.primary, marginTop: 2 },
+  lineSep:        { height: 1, backgroundColor: colors.bg.base, marginHorizontal: spacing[4] },
   emptyLines:     { paddingVertical: 24, alignItems: 'center' },
-  emptyLinesText: { fontSize: 13, color: '#555' },
+  emptyLinesText: { fontSize: 13, color: colors.text.muted },
 
-  totalRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  totalLabel:     { fontSize: 13, color: '#9b9b9b' },
-  totalValue:     { fontSize: 14, color: '#ededed', fontWeight: '600' },
-  totalDivider:   { height: 1, backgroundColor: '#272727', marginHorizontal: 16 },
-  grandTotal:     { fontSize: 22, fontWeight: '800', color: '#3ECF8E', letterSpacing: -0.5 },
+  totalRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[3] },
+  totalLabel:     { fontSize: 13, color: colors.text.secondary },
+  totalValue:     { fontSize: 14, color: colors.text.primary, fontWeight: typography.weight.semibold },
+  totalDivider:   { height: 1, backgroundColor: colors.border.default, marginHorizontal: spacing[4] },
+  grandTotal:     { fontSize: 22, fontWeight: typography.weight.bold, color: colors.status.success, letterSpacing: typography.tracking.tight },
 
-  actionBtn:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
-  actionBtnText:  { fontSize: 14, color: '#ededed', fontWeight: '500' },
+  actionBtn:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[4], gap: 12 },
+  actionBtnText:  { fontSize: 14, color: colors.text.primary, fontWeight: typography.weight.medium },
 });

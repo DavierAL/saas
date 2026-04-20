@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useAuth } from '../src/providers/AppProvider';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
+import { colors } from '@saas-pos/ui';
+
 // ─── AuthGuard ────────────────────────────────────────────────
 function AuthGuard() {
   const { session, isLoading } = useAuth();
@@ -36,10 +38,10 @@ export default function RootLayout() {
         <AuthGuard />
         <Stack
           screenOptions={{
-            headerStyle: { backgroundColor: '#0f0f0f' },
-            headerTintColor: '#ededed',
+            headerStyle: { backgroundColor: colors.bg.base },
+            headerTintColor: colors.text.primary,
             headerTitleStyle: { fontWeight: '600', fontSize: 16 },
-            contentStyle: { backgroundColor: '#0f0f0f' },
+            contentStyle: { backgroundColor: colors.bg.base },
           }}
         >
           <Stack.Screen name="(tabs)"    options={{ headerShown: false }} />

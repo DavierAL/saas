@@ -1,11 +1,8 @@
-/**
- * SubscriptionBanner — shows a warning strip when subscription is expiring soon.
- * Renders null when subscription is healthy (> 5 days remaining).
- * Renders a red block when expired (should redirect to paywall).
- */
+import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSubscriptionStatus } from '@saas-pos/domain';
+import { colors, spacing, typography } from '@saas-pos/ui';
 import { useAuth } from '../providers/AppProvider';
 import { useTenant } from '../hooks/useTenant';
 
@@ -20,7 +17,7 @@ export function SubscriptionBanner() {
 
   if (!status.isActive) {
     return (
-      <Pressable style={s.expired} onPress={() => router.push('/paywall')}>
+      <Pressable style={[s.container, s.expired]} onPress={() => router.push('/paywall')}>
         <Text style={s.expiredText}>
           ⚠  Suscripción vencida — Toca para renovar
         </Text>
@@ -30,7 +27,7 @@ export function SubscriptionBanner() {
 
   if (status.isExpiringSoon) {
     return (
-      <View style={s.warning}>
+      <View style={[s.container, s.warning]}>
         <Text style={s.warningText}>
           ⚠  Suscripción vence en {status.daysRemaining} día{status.daysRemaining !== 1 ? 's' : ''}
         </Text>
@@ -42,23 +39,28 @@ export function SubscriptionBanner() {
 }
 
 const s = StyleSheet.create({
+  container: {
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    borderBottomWidth: 1,
+    alignItems: 'center',
+  },
   expired: {
-    backgroundColor: '#2b0d0d',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EF444430',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignItems: 'center',
+    backgroundColor: colors.accent.redDim,
+    borderBottomColor: `${colors.accent.red}30`,
   },
-  expiredText: { fontSize: 12, color: '#EF4444', fontWeight: '600' },
-
+  expiredText: { 
+    fontSize: typography.size.sm, 
+    color: colors.accent.red, 
+    fontWeight: typography.weight.bold 
+  },
   warning: {
-    backgroundColor: '#2b1e0d',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F59E0B30',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignItems: 'center',
+    backgroundColor: colors.accent.amberDim,
+    borderBottomColor: `${colors.accent.amber}30`,
   },
-  warningText: { fontSize: 12, color: '#F59E0B', fontWeight: '500' },
+  warningText: { 
+    fontSize: typography.size.sm, 
+    color: colors.accent.amber, 
+    fontWeight: typography.weight.medium 
+  },
 });

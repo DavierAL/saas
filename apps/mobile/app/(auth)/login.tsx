@@ -6,13 +6,13 @@
  * On success, AppProvider + AuthGuard redirects to /(tabs).
  */
 import {
-  View, Text, TextInput, Pressable,
-  StyleSheet, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Keyboard,
+  View, Text, StyleSheet, KeyboardAvoidingView, 
+  Platform, Keyboard, ScrollView, Pressable
 } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, typography, radius, Button, Input } from '@saas-pos/ui';
 import { supabase } from '../../src/lib/supabase/client';
 
 type Field = 'email' | 'password';
@@ -25,7 +25,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
-  const [focused,  setFocused]  = useState<Field | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   // [AUTH-004] Antiforce states
@@ -120,120 +119,95 @@ export default function LoginScreen() {
     }
   };
 
-  const inputStyle = (field: Field) => [
-    s.input,
-    focused === field && s.inputFocused,
-    error && s.inputError,
-  ];
-
   return (
     <KeyboardAvoidingView
       style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={s.card}>
-        {/* Logo */}
-        <View style={s.logoRow}>
-          <View style={s.logoMark}>
-            <Text style={s.logoLetter}>P</Text>
+      <ScrollView contentContainerStyle={s.scrollContent}>
+        <View style={s.card}>
+          {/* Logo */}
+          <View style={s.logoRow}>
+            <View style={s.logoMark}>
+              <Text style={s.logoLetter}>P</Text>
+            </View>
+            <Text style={s.logoText}>SaaS POS</Text>
           </View>
-          <Text style={s.logoText}>SaaS POS</Text>
-        </View>
 
-        <Text style={s.title}>{isResetMode ? 'Recuperar acceso' : 'Iniciar sesión'}</Text>
-        <Text style={s.subtitle}>
-          {isResetMode ? 'Enviaremos un enlace a tu email' : 'Accede a tu punto de venta'}
-        </Text>
+          <Text style={s.title}>{isResetMode ? 'Recuperar acceso' : 'Iniciar sesión'}</Text>
+          <Text style={s.subtitle}>
+            {isResetMode ? 'Enviaremos un enlace a tu email' : 'Accede a tu punto de venta'}
+          </Text>
 
-        {/* Feedback messages */}
-        {error && (
-          <View style={s.errorBox}>
-            <Text style={s.errorText}>{error}</Text>
-          </View>
-        )}
-        
-        {resetMessage && (
-          <View style={[s.errorBox, { backgroundColor: '#0d2b1e', borderColor: '#3ECF8E40' }]}>
-            <Text style={[s.errorText, { color: '#3ECF8E' }]}>{resetMessage}</Text>
-          </View>
-        )}
+          {/* Feedback messages */}
+          {error && (
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          )}
+          
+          {resetMessage && (
+            <View style={[s.errorBox, { backgroundColor: colors.accent.greenDim, borderColor: colors.accent.greenBorder }]}>
+              <Text style={[s.errorText, { color: colors.accent.green }]}>{resetMessage}</Text>
+            </View>
+          )}
 
-        {/* Email */}
-        <View style={s.fieldGroup}>
-          <Text style={s.label}>Email</Text>
-          <TextInput
-            style={inputStyle('email')}
+          {/* Email */}
+          <Input
+            label="Email"
             placeholder="cajero@negocio.com"
-            placeholderTextColor="#3a3a3a"
             value={email}
             onChangeText={(txt) => { setEmail(txt); setError(null); setResetMessage(null); }}
-            onFocus={() => setFocused('email')}
-            onBlur={() => setFocused(null)}
             keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            returnKeyType={isResetMode ? "done" : "next"}
+            error={null}
           />
-        </View>
 
-        {/* Password (only in login mode) */}
-        {!isResetMode && (
-          <View style={s.fieldGroup}>
-            <Text style={s.label}>Contraseña</Text>
-            <View style={[inputStyle('password'), { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 8 }]}>
-              <TextInput
-                style={{ flex: 1, color: '#ededed', fontSize: 14, height: '100%' }}
+          {/* Password (only in login mode) */}
+          {!isResetMode && (
+            <View style={{ position: 'relative' }}>
+              <Input
+                label="Contraseña"
                 placeholder="••••••••"
-                placeholderTextColor="#3a3a3a"
                 value={password}
                 onChangeText={(txt) => { setPassword(txt); setError(null); }}
-                onFocus={() => setFocused('password')}
-                onBlur={() => setFocused(null)}
                 secureTextEntry={!showPassword}
-                autoComplete="current-password"
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
+                helperText="Mínimo 8 caracteres"
+                error={null}
               />
-              <Pressable hitSlop={10} onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9b9b9b" />
+              <Pressable 
+                hitSlop={10} 
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 12, top: 38 }}
+              >
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.text.secondary} />
               </Pressable>
             </View>
-            <Text style={s.helperText}>Mínimo 8 caracteres</Text>
-          </View>
-        )}
-
-        {/* CTA */}
-        <Pressable
-          style={({ pressed }) => [
-            s.btn,
-            pressed && s.btnPressed,
-            loading && s.btnDisabled,
-          ]}
-          onPress={isResetMode ? handleResetPassword : handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#0f0f0f" />
-          ) : (
-            <Text style={s.btnText}>{isResetMode ? 'Recibir enlace' : 'Ingresar'}</Text>
           )}
-        </Pressable>
 
-        {/* Footer actions */}
-        <View style={{ gap: 12 }}>
-          <Pressable onPress={() => { setIsResetMode(!isResetMode); setError(null); setResetMessage(null); }}>
-            <Text style={[s.footer, { color: '#3ECF8E', fontWeight: '500' }]}>
-              {isResetMode ? '← Volver al login' : '¿Olvidaste tu contraseña?'}
-            </Text>
-          </Pressable>
-          
-          <Pressable onPress={() => router.push('/(auth)/register')}>
-            <Text style={s.footer}>
-              ¿No tienes cuenta? <Text style={{ color: '#ededed', fontWeight: 'bold' }}>Crear cuenta</Text>
-            </Text>
-          </Pressable>
+          {/* CTA */}
+          <Button
+            label={isResetMode ? 'Recibir enlace' : 'Ingresar'}
+            onPress={isResetMode ? handleResetPassword : handleLogin}
+            loading={loading}
+            variant="primary"
+          />
+
+          {/* Footer actions */}
+          <View style={{ gap: spacing[3] }}>
+            <Pressable onPress={() => { setIsResetMode(!isResetMode); setError(null); setResetMessage(null); }}>
+              <Text style={[s.footer, { color: colors.accent.green, fontWeight: typography.weight.medium }]}>
+                {isResetMode ? '← Volver al login' : '¿Olvidaste tu contraseña?'}
+              </Text>
+            </Pressable>
+            
+            <Pressable onPress={() => router.push('/(auth)/register')}>
+              <Text style={s.footer}>
+                ¿No tienes cuenta? <Text style={{ color: colors.text.primary, fontWeight: typography.weight.bold }}>Crear cuenta</Text>
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -241,84 +215,56 @@ export default function LoginScreen() {
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f0f',
+    backgroundColor: colors.bg.base,
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing[6],
   },
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#1c1c1c',
-    borderRadius: 12,
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: '#272727',
-    padding: 28,
+    borderColor: colors.border.default,
+    padding: spacing[6],
   },
 
   // Logo
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    gap: 10,
+    marginBottom: spacing[6],
+    gap: spacing[2.5],
   },
   logoMark: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: '#3ECF8E',
+    borderRadius: radius.sm,
+    backgroundColor: colors.accent.green,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoLetter: { fontSize: 16, fontWeight: '800', color: '#0f0f0f' },
-  logoText:   { fontSize: 16, fontWeight: '700', color: '#ededed', letterSpacing: -0.3 },
+  logoLetter: { fontSize: 16, fontWeight: typography.weight.extrabold, color: colors.bg.base },
+  logoText:   { fontSize: 16, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight },
 
   // Header
-  title:    { fontSize: 20, fontWeight: '700', color: '#ededed', letterSpacing: -0.5, marginBottom: 4 },
-  subtitle: { fontSize: 13, color: '#666', marginBottom: 24 },
+  title:    { fontSize: 20, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight, marginBottom: 4 },
+  subtitle: { fontSize: 13, color: colors.text.muted, marginBottom: spacing[6] },
 
   // Error
   errorBox: {
-    backgroundColor: '#2b0d0d',
-    borderRadius: 6,
+    backgroundColor: colors.accent.redDim,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#EF444440',
-    padding: 12,
-    marginBottom: 16,
+    borderColor: colors.accent.red,
+    padding: spacing[3],
+    marginBottom: spacing[4],
   },
-  errorText: { fontSize: 13, color: '#EF4444' },
+  errorText: { fontSize: 13, color: colors.accent.red },
 
-  // Form
-  fieldGroup:   { marginBottom: 16 },
-  label:        { fontSize: 12, fontWeight: '500', color: '#9b9b9b', marginBottom: 6, letterSpacing: 0.3 },
-  input: {
-    height: 42,
-    backgroundColor: '#0f0f0f',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#272727',
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#ededed',
-  },
-  inputFocused: { borderColor: '#3ECF8E' },
-  inputError:   { borderColor: '#EF444460' },
-  helperText:   { fontSize: 11, color: '#555', marginTop: 6 },
-
-  // Button
-  btn: {
-    height: 44,
-    backgroundColor: '#3ECF8E',
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  btnPressed:  { backgroundColor: '#2EBF7E' },
-  btnDisabled: { opacity: 0.7 },
-  btnText:     { fontSize: 15, fontWeight: '700', color: '#0f0f0f' },
-
-  footer: { fontSize: 12, color: '#444', textAlign: 'center', lineHeight: 18 },
+  footer: { fontSize: 12, color: colors.text.muted, textAlign: 'center', lineHeight: 18 },
 });
