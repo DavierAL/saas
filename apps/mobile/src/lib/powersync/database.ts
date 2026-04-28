@@ -13,9 +13,10 @@ import { PowerSyncDatabase } from '@powersync/react-native';
 import { AppSchema } from '@saas-pos/sync';
 import { SupabaseConnector } from '../supabase/connector';
 
-// Singleton instance
+// Singleton instances
 let _db: PowerSyncDatabase | null = null;
 let _connector: SupabaseConnector | null = null;
+let _initialized = false;
 
 export const getDatabase = (): PowerSyncDatabase => {
   if (!_db) {
@@ -38,12 +39,15 @@ export const getConnector = (): SupabaseConnector => {
 
 /**
  * Initialize the database and start syncing.
- * Call once on app startup inside the DatabaseProvider.
+ * Idempotent: safe to call multiple times — only connects once.
  */
 export const initDatabase = async (): Promise<PowerSyncDatabase> => {
   const db = getDatabase();
+  if (_initialized) return db;
+
   const connector = getConnector();
   await db.init();
   await db.connect(connector);
+  _initialized = true;
   return db;
 };
