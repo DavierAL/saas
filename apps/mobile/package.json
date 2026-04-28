@@ -24,7 +24,7 @@
     "@saas-pos/ui": "*",
     "@saas-pos/utils": "*",
     "@sentry/react-native": "8.8.0",
-    "@shopify/flash-list": "2.0.2",
+    "@shopify/flash-list": "1.7.1",
     "@supabase/supabase-js": "^2.45.0",
     "expo": "54.0.33",
     "expo-linking": "~8.0.12",

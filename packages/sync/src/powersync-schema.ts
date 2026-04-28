@@ -102,7 +102,7 @@ const appointments = new Table(
  * AppSchema — the central PowerSync schema.
  * Import this wherever you instantiate PowerSyncDatabase.
  */
-export const AppSchema = new Schema([
+export const AppSchema = new Schema({
   tenants,
   users,
   items,
@@ -110,6 +110,6 @@ export const AppSchema = new Schema([
   order_lines,
   tables_restaurant,
   appointments,
-]);
+});
 
 export type Database = (typeof AppSchema)['types'];
