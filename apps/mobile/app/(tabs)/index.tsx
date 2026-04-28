@@ -7,7 +7,7 @@
  */
 import {
   View, Text, StyleSheet, Pressable, TextInput,
-  ScrollView, ActivityIndicator
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
@@ -45,7 +45,7 @@ function SyncBadge() {
   );
 }
 
-/** [UX-016] Skeleton loader — 6 placeholder rows while data loads */
+/** [UX-016] Skeleton loader — 7 placeholder rows while data loads */
 function SkeletonRow() {
   return (
     <View style={st.skeletonRow}>
@@ -151,7 +151,7 @@ function ItemRow({ item, onAdd }: { item: Item; onAdd: (item: Item) => void }) {
 export default function CatalogScreen() {
   const insets = useSafeAreaInsets();
   const { tenantId, subscriptionWarning } = useAuth();
-  const { status } = useSyncStatus();
+  const { status, hasSynced } = useSyncStatus();
 
   const rawItems = useItems(tenantId ?? '');
   const addItem  = useCartStore((s) => s.addItem);
@@ -159,8 +159,9 @@ export default function CatalogScreen() {
   const [search,   setSearch]   = useState('');
   const [category, setCategory] = useState<Category>('all');
 
-  // Determine loading state: syncing with empty local DB
-  const isLoading = status === 'connecting' && rawItems.length === 0;
+  // [UX-016] Show skeleton ONLY on the first-ever sync (local DB empty, never completed a sync).
+  // Once hasSynced=true OR items exist locally, skip straight to the list (even if still syncing).
+  const isLoading = !hasSynced && rawItems.length === 0 && status !== 'disconnected';
   const isError   = status === 'error';
 
   // [UX-018] Category filter
