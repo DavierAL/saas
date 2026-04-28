@@ -21,9 +21,11 @@ import type { PowerSyncDatabase } from '@powersync/react-native';
 import { supabase } from '../lib/supabase/client';
 import type { SupabaseSession } from '../lib/supabase/client';
 import { initDatabase } from '../lib/powersync/database';
-import { 
-  remoteValidateSubscription, 
+import {
+  remoteValidateSubscription,
   validateSubscription,
+} from '@saas-pos/application';
+import {
   SqliteTenantRepository,
   SupabaseRemoteValidator,
 } from '@saas-pos/db';

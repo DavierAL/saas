@@ -37,8 +37,8 @@ export default function OrderDetailScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const { tenantId } = useAuth();
 
-  const orders   = useOrders(tenantId ?? '', 500);
-  const order    = orders.find((o) => o.id === orderId);
+  const { orders } = useOrders(tenantId ?? '', 500);
+  const order      = orders.find((o) => o.id === orderId);
   const lines    = useOrderLines(orderId ?? '', tenantId ?? '');
 
   if (!order) {

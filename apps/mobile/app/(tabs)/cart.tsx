@@ -41,8 +41,8 @@ export default function CartScreen() {
   const { state, error, processCheckout, reset } = useCheckout();
 
   const handleCheckout = async () => {
-    await processCheckout();
-    if (state === 'success') {
+    const result = await processCheckout();
+    if (result === 'success') {
       Alert.alert('✓ Venta registrada', 'La orden fue guardada.', [
         { text: 'OK', onPress: () => { reset(); router.replace('/(tabs)/orders'); } },
       ]);

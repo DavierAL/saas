@@ -67,7 +67,7 @@ export class SupabaseOrderRepository implements IOrderRepositoryPort {
   async getLinesByOrderId(orderId: string, tenantId: string): Promise<OrderLine[]> {
     const { data, error } = await this.client
       .from('order_lines')
-      .select('*')
+      .select('*, item:items(name)')
       .eq('order_id', orderId)
       .eq('tenant_id', tenantId);
 

@@ -82,11 +82,12 @@ export default function LoginScreen() {
         setError('Límite de intentos superado. Cuenta bloqueada por 15 minutos.');
       } else {
         // [AUTH-006] Generic error message (don't leak if email exists or not)
-        setError('Credenciales inválidas. Verifica tu email y contraseña.');
+        setError('Correo o contraseña incorrectos');
       }
     } else {
       setFailedAttempts(0);
       setLockoutDate(null);
+      router.replace('/(tabs)');
     }
   };
 

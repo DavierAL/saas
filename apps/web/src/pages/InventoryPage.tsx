@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Item } from "@saas-pos/domain";
 import { useCases } from "../lib/use-cases";
-
-const FIXED_TENANT_ID = "a002a002-0000-0000-0000-000000000001"; // TODO: Get from context/auth
+import { useTenantId } from "../hooks/useTenantId";
 
 /**
  * InventoryPage: Stock management and low stock alerts
@@ -90,14 +89,17 @@ const WARNING = "#f59e0b"; // Amber
 const DANGER = "#ef4444";
 
 export default function InventoryPage() {
+  const { tenantId, loading: tenantLoading } = useTenantId();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const movements = useMemo(() => generateStockMovements(), []);
   const [filterType, setFilterType] = useState<"all" | "low" | "ok">("all");
 
   useEffect(() => {
+    if (!tenantId) return;
+
     useCases.manageCatalog
-      .findAll(FIXED_TENANT_ID)
+      .findAll(tenantId)
       .then((data: Item[]) => {
         const mapped: InventoryItem[] = data.map((item) => ({
           id: item.id,
@@ -115,7 +117,7 @@ export default function InventoryPage() {
       .catch(() => {
         setLoading(false);
       });
-  }, []);
+  }, [tenantId]);
 
   // Calculate low stock items
   const lowStockItems = useMemo(
@@ -158,7 +160,7 @@ export default function InventoryPage() {
         📦 Inventory Management
       </h1>
 
-      {loading ? (
+      {tenantLoading || loading ? (
         <div
           style={{
             textAlign: "center",

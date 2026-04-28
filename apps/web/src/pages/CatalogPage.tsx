@@ -3,8 +3,7 @@ import type { Item } from "@saas-pos/domain";
 import { formatMoney, createMoney } from "@saas-pos/domain";
 
 import { useCases } from "../lib/use-cases";
-
-const FIXED_TENANT_ID = "a002a002-0000-0000-0000-000000000001"; // TODO: Get from context/auth
+import { useTenantId } from "../hooks/useTenantId";
 
 type SortField = "name" | "price" | "stock" | "type";
 type SortDir = "asc" | "desc";
@@ -43,13 +42,16 @@ function StockIndicator({ stock }: { stock: number | null }) {
 }
 
 export function CatalogPage() {
+  const { tenantId, loading: tenantLoading } = useTenantId();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!tenantId) return;
+    
     useCases.manageCatalog
-      .findAll(FIXED_TENANT_ID)
+      .findAll(tenantId)
       .then((data) => {
         setItems(data);
         setLoading(false);
@@ -58,7 +60,7 @@ export function CatalogPage() {
         setError(err.message || "Error al cargar el catálogo");
         setLoading(false);
       });
-  }, []);
+  }, [tenantId]);
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<{ field: SortField; dir: SortDir }>({
@@ -124,11 +126,11 @@ export function CatalogPage() {
           />
         </div>
         <span style={s.resultCount}>
-          {loading ? "Cargando..." : `${filtered.length} resultados`}
+          {tenantLoading || loading ? "Cargando..." : `${filtered.length} resultados`}
         </span>
       </div>
 
-      {loading ? (
+      {tenantLoading || loading ? (
         <div style={{ textAlign: "center", padding: "48px 0", color: "#555" }}>
           <p>Cargando datos...</p>
         </div>

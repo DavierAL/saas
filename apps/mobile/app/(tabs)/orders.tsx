@@ -187,7 +187,7 @@ export default function OrdersScreen() {
             placeholder="Buscar por # de orden..."
             placeholderTextColor={colors.text.muted}
             value={search}
-            onChangeText={(t) => { setSearch(t); setSliceEnd(PAGE_SIZE); }}
+            onChangeText={(t) => { setSearch(t); }}
             returnKeyType="search"
             autoCapitalize="characters"
           />

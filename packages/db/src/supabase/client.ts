@@ -16,15 +16,35 @@ export const createSupabaseClient = (
  * Deno (Deno.env), or Node (process.env).
  */
 const getEnv = (key: string): string => {
-  // @ts-ignore - Handle different environment variable access patterns
-  const env = (typeof import.meta !== 'undefined' && (import.meta as any).env) 
-    || (typeof process !== 'undefined' ? process.env : {});
-  const val = env[key];
-  return typeof val === 'string' ? val.trim() : '';
+  // 1. Check process.env (Standard for Node, React Native, Expo)
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return (process.env[key] as string).trim();
+  }
+
+  // 2. Safely check for Web environment before accessing import.meta
+  const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+  
+  if (!isReactNative) {
+    try {
+      // @ts-ignore - Safe access for Vite/Web environments
+      const metaEnv = (import.meta as any).env;
+      if (metaEnv && metaEnv[key]) {
+        return (metaEnv[key] as string).trim();
+      }
+    } catch (e) {
+      // import.meta is a syntax error in some environments (like older Hermes)
+    }
+  }
+
+  return '';
 };
 
-const supabaseUrl = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL') || 'https://placeholder.supabase.co';
-const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY') || 'placeholder';
+const getSupabaseEnv = (key: string): string => {
+  return getEnv(`VITE_${key}`) || getEnv(`EXPO_PUBLIC_${key}`) || getEnv(key);
+};
+
+const supabaseUrl = getSupabaseEnv('SUPABASE_URL') || 'https://placeholder.supabase.co';
+const supabaseAnonKey = getSupabaseEnv('SUPABASE_ANON_KEY') || 'placeholder';
 
 // Diagnostic logging for development — only log if we are NOT using a placeholder
 // or if we explicitly want to debug.

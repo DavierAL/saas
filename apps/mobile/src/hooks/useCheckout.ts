@@ -26,8 +26,8 @@ export const useCheckout = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
 
-  const processCheckout = useCallback(async () => {
-    if (!tenantId || cart.items.length === 0) return;
+  const processCheckout = useCallback(async (): Promise<CheckoutState> => {
+    if (!tenantId || cart.items.length === 0) return 'idle';
 
     setState('processing');
     setError(null);
@@ -53,6 +53,7 @@ export const useCheckout = () => {
       setLastOrder(order);
       cart.clearCart();
       setState('success');
+      return 'success';
     } catch (err: any) {
       Sentry.captureException(err, {
         extra: {
@@ -63,6 +64,7 @@ export const useCheckout = () => {
       });
       setError(err.message || 'Error desconocido al procesar el pago');
       setState('error');
+      return 'error';
     }
   }, [db, tenantId, cart]);
 

@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'SaaSPOS'
+rootProject.name = 'SaaS POS'
 
 dependencyResolutionManagement {
   versionCatalogs {

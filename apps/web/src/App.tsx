@@ -7,6 +7,10 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import InventoryPage from './pages/InventoryPage';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { AuthGuard } from './components/AuthGuard';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { useTenantId } from './hooks/useTenantId';
+import { useCases } from './lib/use-cases';
 
 type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'settings';
 
@@ -55,6 +59,29 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 }
 
 function OverviewPage() {
+  const { tenantId } = useTenantId();
+  const [stats, setStats] = useState({ revenue: 0, orders: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    // Fetch orders to calculate today's stats
+    useCases.orders.findByTenant(tenantId, undefined, 50)
+      .then(orders => {
+        const today = new Date().toISOString().split('T')[0];
+        const todayOrders = orders.filter(o => o.created_at.startsWith(today));
+        const todayRevenue = todayOrders.filter(o => o.status === 'paid').reduce((acc, o) => acc + o.total_amount, 0);
+        
+        setStats({
+          revenue: todayRevenue,
+          orders: todayOrders.length
+        });
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [tenantId]);
+
   return (
     <div style={s.pageContent}>
       <div style={s.pageHead}>
@@ -63,8 +90,8 @@ function OverviewPage() {
       </div>
       <div className="stat-grid" style={s.statGrid}>
         {[
-          { label: 'Ventas hoy',     value: formatMoney(createMoney(2410, 'PEN')), accent: true  },
-          { label: 'Órdenes hoy',    value: '3',                             accent: false },
+          { label: 'Ventas hoy',     value: loading ? '...' : formatMoney(createMoney(stats.revenue, 'PEN')), accent: true  },
+          { label: 'Órdenes hoy',    value: loading ? '...' : String(stats.orders),                             accent: false },
           { label: 'Tenants activos',value: '1',                             accent: false },
           { label: 'Sync status',    value: 'OK',                            accent: true  },
         ].map((item) => (
@@ -79,7 +106,7 @@ function OverviewPage() {
         <div style={s.stackTable}>
           {[
             { name: 'Turborepo',  status: '✓ Activo',      ok: true,  desc: 'Monorepo + build pipeline' },
-            { name: 'Supabase',   status: '⚙ Configurar', ok: false, desc: 'Auth + PostgreSQL + RLS' },
+            { name: 'Supabase',   status: '✓ Conectado',   ok: true,  desc: 'Auth + PostgreSQL + RLS' },
             { name: 'PowerSync',  status: '⚙ Configurar', ok: false, desc: 'SQLite ↔ Postgres sync' },
             { name: 'Expo EAS',   status: '✓ Listo',       ok: true,  desc: 'Mobile build + OTA updates' },
           ].map((item) => (
@@ -106,42 +133,48 @@ export function App() {
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   return (
-    <div className="app-container">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="main-content">
-        <header className="mobile-header">
-          <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
-          <span style={{ fontWeight: 600 }}>SaaS POS</span>
-          <div style={{ width: 32 }} /> {/* spacer */}
-        </header>
-        <main className="page-wrapper">
-          <AuthGuard>
-            <Routes>
-              <Route path="/" element={<OverviewPage />} />
-              <Route path="/catalog" element={<CatalogPage />} />
-              <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/tenants" element={<TenantsPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
-              <Route path="/settings" element={
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
-                  <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-                    <strong style={{ color: 'var(--text-primary)' }}>Ajustes</strong> — En construcción
-                  </p>
-                  <button 
-                    onClick={toggleTheme}
-                    style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)', border: '1px solid var(--accent-border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    Cambiar a Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
-                  </button>
-                </div>
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AuthGuard>
-        </main>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/*" element={
+        <AuthGuard>
+          <div className="app-container">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <div className="main-content">
+              <header className="mobile-header">
+                <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
+                <span style={{ fontWeight: 600 }}>SaaS POS</span>
+                <div style={{ width: 32 }} /> {/* spacer */}
+              </header>
+              <main className="page-wrapper">
+                <Routes>
+                  <Route path="/" element={<OverviewPage />} />
+                  <Route path="/catalog" element={<CatalogPage />} />
+                  <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/tenants" element={<TenantsPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/inventory" element={<InventoryPage />} />
+                  <Route path="/settings" element={
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>Ajustes</strong> — En construcción
+                      </p>
+                      <button 
+                        onClick={toggleTheme}
+                        style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)', border: '1px solid var(--accent-border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        Cambiar a Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
+                      </button>
+                    </div>
+                  } />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+            </div>
+          </div>
+        </AuthGuard>
+      } />
+    </Routes>
   );
 }
 // ComingSoon removed

@@ -18,14 +18,13 @@ import type { OrderAnalytics } from "@saas-pos/domain";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { colors, spacing, typography, radius } from "@saas-pos/ui";
 import { supabase } from "../lib/supabase";
+import { useTenantId } from "../hooks/useTenantId";
 
 /**
  * AnalyticsPage: Sales analytics dashboard with charts
  * Shows: daily sales trends, top items, revenue by type
  * Connects to Supabase RPC get_sales_analytics
  */
-
-const FIXED_TENANT_ID = "a002a002-0000-0000-0000-000000000001"; // TODO: Get from context/auth
 
 // Color scheme from tokens
 const COLORS = [
@@ -41,21 +40,24 @@ const TEXT_SECONDARY = colors.text.secondary;
 const ACCENT = colors.accent.green;
 
 export default function AnalyticsPage() {
+  const { tenantId, loading: tenantLoading } = useTenantId();
   const [data, setData] = useState<OrderAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState<boolean>(true);
 
   useEffect(() => {
+    if (!tenantId) return;
+
     // Check session for RLS awareness
     supabase.auth.getSession().then(({ data: { session } }) => {
       setHasSession(!!session);
     });
 
     setLoading(true);
-    console.log("Fetching analytics for tenant:", FIXED_TENANT_ID);
+    console.log("Fetching analytics for tenant:", tenantId);
     useCases.orders
-      .getAnalytics(FIXED_TENANT_ID)
+      .getAnalytics(tenantId)
       .then((res) => {
         console.log("Analytics result:", res);
         setData(res);
@@ -71,7 +73,7 @@ export default function AnalyticsPage() {
         setError(msg);
         setLoading(false);
       });
-  }, []);
+  }, [tenantId]);
 
   // Calculate summary metrics
   const totalRevenue = useMemo(
@@ -86,7 +88,7 @@ export default function AnalyticsPage() {
   const topItemsTotalSold =
     data?.top_items.reduce((sum, item) => sum + item.sales, 0) || 0;
 
-  if (loading) {
+  if (tenantLoading || (loading && !data)) {
     return (
       <div
         style={{

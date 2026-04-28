@@ -17,6 +17,7 @@ const tenants = new Table(
     industry_type:   { type: ColumnType.TEXT },
     modules_config:  { type: ColumnType.TEXT },
     valid_until:     { type: ColumnType.TEXT },
+    currency:        { type: ColumnType.TEXT },  // e.g. 'PEN', 'USD'
     last_remote_validation_at: { type: ColumnType.TEXT },
     created_at:      { type: ColumnType.TEXT },
     updated_at:      { type: ColumnType.TEXT },
@@ -57,6 +58,7 @@ const orders = new Table(
     user_id:      { type: ColumnType.TEXT },
     status:       { type: ColumnType.TEXT },
     total_amount: { type: ColumnType.INTEGER },
+    currency:     { type: ColumnType.TEXT },  // snapshot of tenant currency at time of sale
     created_at:   { type: ColumnType.TEXT },
     updated_at:   { type: ColumnType.TEXT },
     deleted_at:   { type: ColumnType.TEXT },

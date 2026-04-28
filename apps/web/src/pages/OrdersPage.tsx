@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Order } from "@saas-pos/domain";
 import { formatMoney, createMoney } from "@saas-pos/domain";
 import { useCases } from "../lib/use-cases";
-
-const FIXED_TENANT_ID = "a002a002-0000-0000-0000-000000000001"; // TODO: Get from context/auth
+import { useTenantId } from "../hooks/useTenantId";
 
 const STATUS = {
   paid: { label: "Pagado", color: "#3ECF8E", bg: "#0d2b1e" },
@@ -19,18 +18,23 @@ const STATUS = {
 };
 
 export function OrdersPage() {
+  const { tenantId, loading: tenantLoading } = useTenantId();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderLines, setOrderLines] = useState<(OrderLine & { item?: { name: string } })[]>([]);
+  const [loadingLines, setLoadingLines] = useState(false);
 
   const PAGE_SIZE = 20;
 
   const fetchOrders = useCallback(async (cursor?: string) => {
+    if (!tenantId) return;
     try {
       const data = await useCases.orders.findByTenant(
-        FIXED_TENANT_ID,
+        tenantId,
         cursor,
         PAGE_SIZE,
       );
@@ -47,17 +51,35 @@ export function OrdersPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (tenantId) {
+      fetchOrders();
+    }
+  }, [fetchOrders, tenantId]);
 
   const handleLoadMore = () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const lastOrder = orders[orders.length - 1];
     fetchOrders(lastOrder?.created_at);
+  };
+
+  const handleOrderClick = async (order: Order) => {
+    setSelectedOrder(order);
+    setLoadingLines(true);
+    setOrderLines([]);
+    try {
+      if (tenantId) {
+        const lines = await useCases.orders.getLines(order.id, tenantId);
+        setOrderLines(lines as any);
+      }
+    } catch (err) {
+      console.error("Error fetching order lines:", err);
+    } finally {
+      setLoadingLines(false);
+    }
   };
 
   const totalRevenue = orders
@@ -112,7 +134,7 @@ export function OrdersPage() {
         ))}
       </div>
 
-      {loading ? (
+      {tenantLoading || loading ? (
         <div style={{ textAlign: "center", padding: "48px 0", color: "#555" }}>
           <p>Cargando órdenes...</p>
         </div>
@@ -140,7 +162,8 @@ export function OrdersPage() {
                 return (
                   <tr
                     key={order.id}
-                    style={s.tr}
+                    onClick={() => handleOrderClick(order)}
+                    style={{ ...s.tr, cursor: "pointer" }}
                     onMouseEnter={(e) =>
                       ((
                         e.currentTarget as HTMLTableRowElement
@@ -241,6 +264,88 @@ export function OrdersPage() {
           )}
         </div>
       )}
+
+      {/* Modal Detail */}
+      {selectedOrder && (
+        <div style={s.modalOverlay} onClick={() => setSelectedOrder(null)}>
+          <div style={s.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <div>
+                <h2 style={s.modalTitle}>Detalle de Orden</h2>
+                <p style={s.modalSub}>
+                  ID: {selectedOrder.id.toUpperCase()}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedOrder(null)}
+                style={s.closeBtn}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={s.modalBody}>
+              <div style={s.detailGrid}>
+                <div style={s.detailSection}>
+                  <p style={s.detailLabel}>Fecha y Hora</p>
+                  <p style={s.detailValue}>
+                    {new Date(selectedOrder.created_at).toLocaleString("es-PE")}
+                  </p>
+                </div>
+                <div style={s.detailSection}>
+                  <p style={s.detailLabel}>Estado</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      ...s.statusBadge,
+                      backgroundColor: STATUS[selectedOrder.status]?.bg || STATUS.cancelled.bg,
+                      color: STATUS[selectedOrder.status]?.color || STATUS.cancelled.color,
+                    }}>
+                      {STATUS[selectedOrder.status]?.label || selectedOrder.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={s.linesSection}>
+                <p style={s.detailLabel}>Productos</p>
+                {loadingLines ? (
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13, padding: '12px 0' }}>Cargando productos...</p>
+                ) : (
+                  <div style={s.linesTable}>
+                    <div style={s.lineHeader}>
+                      <span style={{ flex: 2 }}>Producto</span>
+                      <span style={{ flex: 1, textAlign: 'center' }}>Cant.</span>
+                      <span style={{ flex: 1, textAlign: 'right' }}>Subtotal</span>
+                    </div>
+                    {orderLines.map((line) => (
+                      <div key={line.id} style={s.lineRow}>
+                        <span style={{ flex: 2, color: 'var(--text-primary)', fontWeight: 500 }}>
+                          {line.item?.name || 'Producto desconocido'}
+                        </span>
+                        <span style={{ flex: 1, textAlign: 'center' }}>
+                          x{line.quantity}
+                        </span>
+                        <span style={{ flex: 1, textAlign: 'right', color: 'var(--text-primary)' }}>
+                          {formatMoney(createMoney(line.subtotal, selectedOrder.currency))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={s.modalFooter}>
+                <div style={s.totalRow}>
+                  <span style={s.totalLabel}>Total</span>
+                  <span style={s.totalValue}>
+                    {formatMoney(createMoney(selectedOrder.total_amount, selectedOrder.currency))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -310,5 +415,138 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: "var(--text-secondary)",
     borderBottom: "1px solid var(--border-light)",
+  },
+  
+  // Modal Styles
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    animation: 'fadeIn 0.2s ease-out',
+  },
+  modalContent: {
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-color)',
+    borderRadius: 12,
+    width: '90%',
+    maxWidth: 500,
+    maxHeight: '80vh',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+  },
+  modalHeader: {
+    padding: '20px 24px',
+    borderBottom: '1px solid var(--border-color)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  modalSub: {
+    fontSize: 11,
+    fontFamily: '"Geist Mono", monospace',
+    color: 'var(--text-muted)',
+    marginTop: 4,
+    margin: 0,
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-muted)',
+    fontSize: 20,
+    cursor: 'pointer',
+    padding: 4,
+  },
+  modalBody: {
+    padding: '24px',
+    overflowY: 'auto',
+  },
+  detailGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 24,
+    marginBottom: 32,
+  },
+  detailSection: {},
+  detailLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: 8,
+    margin: '0 0 8px',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  statusBadge: {
+    padding: "2px 8px",
+    borderRadius: 4,
+    fontSize: 11,
+    fontWeight: 600,
+  },
+  linesSection: {
+    marginBottom: 32,
+  },
+  linesTable: {
+    border: '1px solid var(--border-light)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  lineHeader: {
+    display: 'flex',
+    padding: '10px 16px',
+    backgroundColor: 'var(--bg-primary)',
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    borderBottom: '1px solid var(--border-light)',
+  },
+  lineRow: {
+    display: 'flex',
+    padding: '12px 16px',
+    fontSize: 13,
+    color: 'var(--text-secondary)',
+    borderBottom: '1px solid var(--border-light)',
+    alignItems: 'center',
+  },
+  modalFooter: {
+    padding: '20px 24px',
+    borderTop: '1px solid var(--border-color)',
+    backgroundColor: 'var(--bg-primary)',
+  },
+  totalRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  totalValue: {
+    fontSize: 20,
+    fontWeight: 800,
+    color: 'var(--accent-color)',
   },
 };

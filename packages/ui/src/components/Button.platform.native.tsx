@@ -2,16 +2,17 @@ import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } 
 import { colors, spacing, radius, typography } from '../tokens';
 import { ButtonProps } from './types';
 
-export function Button({ 
-  label, 
-  onPress, 
-  variant = 'primary', 
-  size = 'md', 
-  disabled, 
-  loading, 
-  children 
+export function Button({
+  label,
+  onPress,
+  variant = 'primary',
+  size = 'md',
+  disabled,
+  loading,
+  children,
+  style,
 }: ButtonProps) {
-  
+
   const getStyles = (pressed: boolean) => {
     const base: ViewStyle = {
       ...s.btn,
@@ -20,17 +21,17 @@ export function Button({
     };
 
     if (pressed) {
-      return { ...base, ...variantStyles[variant].pressed } as ViewStyle;
+      return [{ ...base, ...variantStyles[variant].pressed } as ViewStyle, style];
     }
     if (disabled || loading) {
-      return { ...base, opacity: 0.5 } as ViewStyle;
+      return [{ ...base, opacity: 0.5 } as ViewStyle, style];
     }
-    return base;
+    return [base, style];
   };
 
   return (
-    <Pressable 
-      onPress={onPress} 
+    <Pressable
+      onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => getStyles(pressed)}
     >

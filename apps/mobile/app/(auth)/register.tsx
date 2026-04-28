@@ -17,82 +17,60 @@ import { supabase } from '../../src/lib/supabase/client';
 type Field = 'fullName' | 'email' | 'password' | 'invitationCode';
 
 export default function RegisterScreen() {
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [invitationCode, setInvitationCode] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleRegister = async () => {
-    Keyboard.dismiss();
-
-    if (!fullName.trim() || !email.trim() || !password || !invitationCode.trim()) {
-      setError('Completa todos los campos obligatorios.');
-      return;
+  const validate = () => {
+    if (!email.trim() || !password || !confirmPassword) {
+      return 'Completa todos los campos.';
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      setError('Formato de email inválido.');
-      return;
+      return 'Correo electrónico inválido.';
     }
-
     if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
+      return 'La contraseña debe tener al menos 8 caracteres.';
+    }
+    if (password !== confirmPassword) {
+      return 'Las contraseñas no coinciden.';
+    }
+    return null;
+  };
+
+  const handleRegister = async () => {
+    Keyboard.dismiss();
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          invitation_code: invitationCode.trim()
-        }
-      }
     });
 
     setLoading(false);
 
-    if (authError) {
-      if (authError.message.includes('already registered')) {
-         setError('Este email ya está registrado.');
+    if (signUpError) {
+      if (signUpError.message.toLowerCase().includes('already registered')) {
+        setError('Ya existe una cuenta con ese correo.');
       } else {
-         setError('Ocurrió un error al crear la cuenta. Intenta nuevamente.');
+        setError(signUpError.message);
       }
     } else {
-      setSuccess(true);
+      router.replace('/onboarding');
     }
   };
-
-  if (success) {
-    return (
-      <View style={s.container}>
-        <View style={s.card}>
-          <View style={s.logoRow}>
-            <View style={s.logoMark}>
-              <Text style={s.logoLetter}>P</Text>
-            </View>
-            <Text style={s.logoText}>SaaS POS</Text>
-          </View>
-          <Text style={s.title}>¡Cuenta Creada!</Text>
-          <Text style={s.subtitle}>
-            Por favor, revisa tu bandeja de entrada para verificar tu cuenta antes de iniciar sesión.
-          </Text>
-          <Button label="Volver al login" onPress={() => router.replace('/(auth)/login')} />
-        </View>
-      </View>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
@@ -109,7 +87,7 @@ export default function RegisterScreen() {
           </View>
 
           <Text style={s.title}>Crea tu cuenta</Text>
-          <Text style={s.subtitle}>Únete a tu equipo de trabajo</Text>
+          <Text style={s.subtitle}>Empieza a gestionar tu negocio hoy</Text>
 
           {error ? (
             <View style={s.errorBox}>
@@ -117,25 +95,15 @@ export default function RegisterScreen() {
             </View>
           ) : null}
 
-          {/* Full Name */}
-          <Input
-            label="Nombre Completo"
-            placeholder="Ej. Juan Pérez"
-            value={fullName}
-            onChangeText={(txt) => { setFullName(txt); setError(null); }}
-            autoCapitalize="words"
-          />
-
-          {/* Email */}
           <Input
             label="Email"
             placeholder="correo@empresa.com"
             value={email}
             onChangeText={(txt) => { setEmail(txt); setError(null); }}
             keyboardType="email-address"
+            autoCapitalize="none"
           />
 
-          {/* Password */}
           <View style={{ position: 'relative' }}>
             <Input
               label="Contraseña"
@@ -154,23 +122,20 @@ export default function RegisterScreen() {
             </Pressable>
           </View>
 
-          {/* Invitation Code */}
           <Input
-            label="Código de Invitación (Tenant)"
-            placeholder="ABC-1234"
-            value={invitationCode}
-            onChangeText={(txt) => { setInvitationCode(txt); setError(null); }}
-            autoCapitalize="characters"
+            label="Confirmar Contraseña"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChangeText={(txt) => { setConfirmPassword(txt); setError(null); }}
+            secureTextEntry={!showPassword}
           />
 
-          {/* CTA */}
           <Button
             label="Crear cuenta"
             onPress={handleRegister}
             loading={loading}
           />
 
-          {/* Footer actions */}
           <View style={{ gap: spacing[3], marginTop: spacing[2] }}>
             <Pressable onPress={() => router.back()}>
               <Text style={s.footer}>
