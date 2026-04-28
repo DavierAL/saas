@@ -20,7 +20,7 @@ import { PowerSyncContext } from '@powersync/react-native';
 import type { PowerSyncDatabase } from '@powersync/react-native';
 import { supabase } from '../lib/supabase/client';
 import type { SupabaseSession } from '../lib/supabase/client';
-import { initDatabase } from '../lib/powersync/database';
+import { initDatabase, getDatabase } from '../lib/powersync/database';
 import {
   remoteValidateSubscription,
   validateSubscription,
@@ -66,11 +66,22 @@ const getValidJwtPayload = (token: string | undefined): Record<string, unknown> 
   }
 };
 
-// Extracts claims injected by custom_access_token_hook in auth-setup.sql
+// Extracts claims injected by custom_access_token_hook OR found in metadata
 const extractClaim = (token: string | undefined, claim: string): string | null => {
+  if (!token) return null;
   const payload = getValidJwtPayload(token);
-  if (!payload) return null;
-  return (payload[claim] as string) ?? null;
+  if (!payload) {
+    return null;
+  }
+
+  // Priority: 1. Root claim (from hook), 2. app_metadata, 3. user_metadata
+  const value = (payload[claim] as string) ?? 
+                ((payload.app_metadata as any)?.[claim] as string) ??
+                ((payload.user_metadata as any)?.[claim] as string) ??
+                null;
+
+  console.log(`[JWT] Extracted claim '${claim}':`, value);
+  return value;
 };
 
 // ─── Auth Context ─────────────────────────────────────────────
@@ -94,98 +105,95 @@ const AuthContext = createContext<AuthContextValue>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// ─── Database Provider ────────────────────────────────────────
-// Only mounts when we have a valid session (prevents unauthenticated DB init)
-function DatabaseProvider({ 
+// ─── Sync Controller ──────────────────────────────────────────
+/**
+ * SyncController — manages PowerSync connection & remote validation.
+ * It does NOT wrap children, so it doesn't cause the navigation tree to unmount.
+ */
+function SyncController({ 
   tenantId, 
-  onWarning, 
-  children 
+  onWarning 
 }: { 
-  tenantId: string; 
+  tenantId: string | null; 
   onWarning: (warning: string | null) => void;
-  children: any 
 }) {
-  const [db, setDb] = useState<PowerSyncDatabase | null>(null);
-
   useEffect(() => {
+    if (!tenantId) return;
+    
     let cancelled = false;
+    const db = getDatabase();
 
     initDatabase()
       .then(async (database) => {
         if (cancelled) return;
-        setDb(database);
+        console.log('[SyncController] PowerSync DB initialized and connected.');
 
         // ── Step 4: Periodic Remote Validation ────────────────
-        // We trigger it as soon as the DB is ready
         const repo = new SqliteTenantRepository(database);
         const remoteValidator = new SupabaseRemoteValidator(supabase);
         
-        // 1. Trigger remote validation (async, don't wait for it to finish initialization)
+        console.log('[SyncController] Triggering remote validation for:', tenantId);
         remoteValidateSubscription(tenantId, {
           tenantRepo: repo,
           remoteValidator,
         }).then(async () => {
-          // 2. After remote validation (or failure), check local status to update UI warning
+          if (cancelled) return;
           const status = await validateSubscription(tenantId, repo);
+          console.log('[SyncController] Remote validation finished. Status:', status.allowed ? 'Valid' : 'Invalid');
           onWarning(status.warning ?? null);
+        }).catch(err => {
+          console.warn('[SyncController] Remote validation failed:', err.message);
         });
 
-        // 3. Initial local check (in case we are offline)
+        // Initial local check
         const initialStatus = await validateSubscription(tenantId, repo);
         onWarning(initialStatus.warning ?? null);
       })
       .catch((err: Error) => {
-        console.error('[DatabaseProvider] init failed:', err.message);
+        console.error('[SyncController] init failed:', err.message);
       });
 
     return () => { cancelled = true; };
   }, [tenantId]);
 
-  if (!db) {
-    return null;
-  }
-
-  return (
-    <PowerSyncContext.Provider value={db}>
-      {children}
-    </PowerSyncContext.Provider>
-  );
+  return null;
 }
 
 // ─── App Provider ─────────────────────────────────────────────
 export function AppProvider({ children }: { children: any }) {
   // undefined = still loading, null = no session, Session = authenticated
   const [session, setSession] = useState<SupabaseSession | null | undefined>(undefined);
+  const [subscriptionWarning, setSubscriptionWarning] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Load existing session from AsyncStorage
+    // 1. Load existing session
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => setSession(session))
       .catch(() => setSession(null));
 
-    // 2. Subscribe to future auth state changes
+    // 2. Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log(`[Auth] Auth state changed: ${event}`, !!newSession ? 'Session exists' : 'No session');
       setSession(newSession);
     });
 
-    // 3. [AUTH-002] Expiration checker loop
+    // 3. Expiration checker loop
     const interval = setInterval(async () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (currentSession?.access_token) {
         const payload = getValidJwtPayload(currentSession.access_token);
-        // If exp exists, verify timeframe. If exp < now + 5 min, refresh.
         if (payload && typeof payload.exp === 'number') {
           const timeUntilExp = payload.exp - Math.floor(Date.now() / 1000);
           if (timeUntilExp > 0 && timeUntilExp < 300) {
-            console.log('[Auth] Token expiring in less than 5m. Refreshing session...');
+            console.log('[Auth] Token expiring soon. Refreshing...');
             await supabase.auth.refreshSession();
           }
         }
       }
-    }, 60000); // Check every minute
+    }, 60000);
 
     return () => {
       subscription.unsubscribe();
@@ -197,33 +205,28 @@ export function AppProvider({ children }: { children: any }) {
     await supabase.auth.signOut();
   }, []);
 
-  const isLoading = session === undefined;
   const activeSession = session ?? null;
-
   const tenantId = extractClaim(activeSession?.access_token, 'tenant_id');
   const role     = extractClaim(activeSession?.access_token, 'role');
 
-  const [subscriptionWarning, setSubscriptionWarning] = useState<string | null>(null);
-
   const authValue: AuthContextValue = {
     session: activeSession,
-    isLoading,
+    isLoading: session === undefined,
     tenantId,
     role,
     subscriptionWarning,
     signOut,
   };
 
+  const db = getDatabase();
+
   return (
     <AuthContext.Provider value={authValue}>
-      {/* DB only initializes once session is confirmed and we have a tenantId */}
-      {activeSession && tenantId ? (
-        <DatabaseProvider tenantId={tenantId} onWarning={setSubscriptionWarning}>
-          {children}
-        </DatabaseProvider>
-      ) : (
-        children
-      )}
+      <PowerSyncContext.Provider value={db}>
+        <SyncController tenantId={tenantId} onWarning={setSubscriptionWarning} />
+        {children}
+      </PowerSyncContext.Provider>
     </AuthContext.Provider>
   );
 }
+

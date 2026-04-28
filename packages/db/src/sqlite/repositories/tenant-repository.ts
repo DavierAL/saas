@@ -7,32 +7,28 @@
  *   - Compares against device clock
  *   - No network required to enforce the paywall
  */
+import { ITenantRepositoryPort } from '@saas-pos/application';
 import type { PowerSyncDatabase } from '@powersync/react-native';
 import type { Tenant } from '@saas-pos/domain';
 
-export interface ITenantRepository {
-  findById(id: string): Promise<Tenant | null>;
-  isSubscriptionActive(id: string): Promise<boolean>;
-  updateSubscription(id: string, validUntil: string, lastValidatedAt: string): Promise<void>;
-}
-
-export class SqliteTenantRepository implements ITenantRepository {
+export class SqliteTenantRepository implements ITenantRepositoryPort {
   constructor(private readonly db: PowerSyncDatabase) {}
 
   async findById(id: string): Promise<Tenant | null> {
-    const row = await this.db.get<{
+    const row = await this.db.getOptional<{
       id: string;
       name: string;
       industry_type: string;
       modules_config: string;
       valid_until: string;
+      last_remote_validation_at: string | null;
       currency: string;
       created_at: string;
       updated_at: string;
       deleted_at: string | null;
     }>(
-      `SELECT id, name, industry_type, modules_config,
-              valid_until, currency, created_at, updated_at, deleted_at
+      `SELECT id, name, industry_type, modules_config, valid_until, 
+              last_remote_validation_at, currency, created_at, updated_at, deleted_at
        FROM tenants WHERE id = ?`,
       [id],
     );
@@ -54,6 +50,8 @@ export class SqliteTenantRepository implements ITenantRepository {
     return {
       ...row,
       industry_type: row.industry_type as Tenant['industry_type'],
+      valid_until: row.valid_until,
+      last_remote_validation_at: row.last_remote_validation_at ?? undefined,
       // modules_config is stored as JSON string in SQLite
       modules_config: modulesConfig,
     };

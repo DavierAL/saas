@@ -30,5 +30,6 @@ export const useTenant = (tenantId: string): Tenant | null => {
     ...row,
     industry_type: row.industry_type as Tenant['industry_type'],
     modules_config: JSON.parse(row.modules_config) as Tenant['modules_config'],
+    last_remote_validation_at: row.last_remote_validation_at ?? undefined,
   };
 };

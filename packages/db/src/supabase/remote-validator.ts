@@ -8,10 +8,24 @@ export class SupabaseRemoteValidator implements IRemoteValidatorPort {
     const { data, error } = await this.supabase.functions.invoke('validate-subscription');
 
     if (error) {
-      throw new Error(`Remote validation failed: ${error.message}`);
+      console.warn('[SupabaseRemoteValidator] Raw error:', error);
+      // In Supabase SDK, the body of a 400 response is often in error.context
+      let message = error.message;
+      if ((error as any).context) {
+        try {
+          const context = (error as any).context;
+          message = context.error || context.message || JSON.stringify(context);
+        } catch {
+          message = error.message;
+        }
+      }
+      throw new Error(`Remote validation failed: ${message}`);
     }
 
     if (!data || !data.valid_until || !data.server_time) {
+      if (data?.error) {
+        throw new Error(`Remote validation error: ${data.error}`);
+      }
       throw new Error('Invalid response from remote validation');
     }
 

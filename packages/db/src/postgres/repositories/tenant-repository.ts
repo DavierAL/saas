@@ -44,4 +44,17 @@ export class SupabaseTenantRepository implements ITenantRepositoryPort {
     if (!tenant) return false;
     return isTenantSubscriptionActive(tenant);
   }
+
+  async updateSubscription(id: string, validUntil: string, lastValidatedAt: string): Promise<void> {
+    const { error } = await this.client
+      .from('tenants')
+      .update({
+        valid_until: validUntil,
+        last_remote_validation_at: lastValidatedAt,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+  }
 }

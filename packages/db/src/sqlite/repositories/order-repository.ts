@@ -8,20 +8,23 @@
  *
  * This is the heart of the checkout flow.
  */
+import { IOrderRepositoryPort } from '@saas-pos/application';
 import type { PowerSyncDatabase } from '@powersync/react-native';
-import type { Order, OrderLine } from '@saas-pos/domain';
+import type { Order, OrderLine, OrderAnalytics } from '@saas-pos/domain';
 import { nowISO } from '@saas-pos/utils';
 
-export interface IOrderRepository {
-  insertOrderWithLines(order: Order, lines: readonly OrderLine[]): Promise<void>;
-  findByTenant(tenantId: string, cursor?: string, limit?: number): Promise<Order[]>;
-  findById(id: string, tenantId: string): Promise<Order | null>;
-  updateStatus(id: string, status: Order['status'], tenantId: string): Promise<void>;
-  getLinesByOrderId(orderId: string, tenantId: string): Promise<OrderLine[]>;
-}
-
-export class SqliteOrderRepository implements IOrderRepository {
+export class SqliteOrderRepository implements IOrderRepositoryPort {
   constructor(private readonly db: PowerSyncDatabase) {}
+
+  async getAnalytics(tenantId: string, days = 7): Promise<OrderAnalytics> {
+    // For now, local analytics are a stub to satisfy the interface.
+    // Real implementation would require complex aggregation over the orders table.
+    return {
+      daily_sales: [],
+      top_items: [],
+      revenue_by_category: [],
+    };
+  }
 
   /**
    * Atomic checkout: inserts order + all lines + decrements stock
@@ -98,7 +101,7 @@ export class SqliteOrderRepository implements IOrderRepository {
   }
 
   async findById(id: string, tenantId: string): Promise<Order | null> {
-    const row = await this.db.get<Order>(
+    const row = await this.db.getOptional<Order>(
       `SELECT id, tenant_id, user_id, status, total_amount, currency,
               created_at, updated_at, deleted_at
        FROM orders WHERE id = ? AND tenant_id = ?`,

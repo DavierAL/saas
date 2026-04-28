@@ -24,13 +24,22 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
    * bucket_definitions apply to this user.
    */
   async fetchCredentials() {
+    console.log('[SupabaseConnector] Fetching credentials...');
     const {
       data: { session },
       error,
     } = await supabase.auth.getSession();
 
-    if (error) throw error;
-    if (!session) throw new Error('No active session. Please log in.');
+    if (error) {
+      console.error('[SupabaseConnector] getSession error:', error.message);
+      throw error;
+    }
+    if (!session) {
+      console.warn('[SupabaseConnector] No active session found.');
+      throw new Error('No active session. Please log in.');
+    }
+
+    console.log('[SupabaseConnector] Credentials fetched successfully. Token present:', !!session.access_token);
 
     return {
       endpoint: POWERSYNC_URL,

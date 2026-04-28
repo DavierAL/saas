@@ -18,6 +18,7 @@ beforeEach(() => {
     findById:             jest.fn(),
     updateStatus:         jest.fn(),
     getLinesByOrderId:    jest.fn(),
+    getAnalytics:         jest.fn(),
   };
 
   itemRepo = {
@@ -32,7 +33,8 @@ beforeEach(() => {
 
   tenantRepo = {
     findById: jest.fn().mockResolvedValue(tenantBuilder().active().build()),
-    isSubscriptionActive: jest.fn().mockResolvedValue(true), // Now redundant but kept for interface compliance
+    isSubscriptionActive: jest.fn().mockResolvedValue(true), 
+    updateSubscription: jest.fn().mockResolvedValue(undefined),
   };
 });
 

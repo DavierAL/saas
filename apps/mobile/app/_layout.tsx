@@ -14,52 +14,36 @@ Sentry.init({
   tracesSampleRate: 1.0, //  Capture 100% of the transactions
 });
 
-// ─── AuthGuard ────────────────────────────────────────────────
-function AuthGuard() {
-  const { session, isLoading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (!session && !inAuthGroup) {
-      // Not logged in -> go to login
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      // Logged in + in auth group -> go to app
-      router.replace('/(tabs)');
-    }
-  }, [session, isLoading, segments]);
-
-  return null;
+// ─── Root Layout ──────────────────────────────────────────────
+function RootContent() {
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.bg.base },
+        headerTintColor: colors.text.primary,
+        headerTitleStyle: { fontWeight: '600', fontSize: 16 },
+        contentStyle: { backgroundColor: colors.bg.base },
+      }}
+    >
+      {/* Screens are defined. Navigation is handled by redirects in individual screens. */}
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="paywall" options={{
+        title: 'Suscripción',
+        headerStyle: { backgroundColor: '#0f0f0f' },
+        headerTintColor: '#ededed',
+      }} />
+    </Stack>
+  );
 }
 
-// ─── Root Layout ──────────────────────────────────────────────
 function RootLayout() {
   return (
     <ErrorBoundary>
       <AppProvider>
         <StatusBar style="light" />
-        <AuthGuard />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.bg.base },
-            headerTintColor: colors.text.primary,
-            headerTitleStyle: { fontWeight: '600', fontSize: 16 },
-            contentStyle: { backgroundColor: colors.bg.base },
-          }}
-        >
-          <Stack.Screen name="(tabs)"    options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)"    options={{ headerShown: false }} />
-          <Stack.Screen name="paywall"   options={{
-            title: 'Suscripción',
-            headerStyle: { backgroundColor: '#0f0f0f' },
-            headerTintColor: '#ededed',
-          }} />
-        </Stack>
+        <RootContent />
       </AppProvider>
     </ErrorBoundary>
   );

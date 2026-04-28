@@ -7,21 +7,12 @@
  *
  * All reads use SQLite directly (offline-first).
  */
+import { IItemRepositoryPort } from '@saas-pos/application';
 import type { PowerSyncDatabase } from '@powersync/react-native';
 import type { Item, ItemType } from '@saas-pos/domain';
 import { generateId, nowISO } from '@saas-pos/utils';
 
-export interface IItemRepository {
-  findAll(tenantId: string): Promise<Item[]>;
-  findById(id: string, tenantId: string): Promise<Item | null>;
-  findByType(type: ItemType, tenantId: string): Promise<Item[]>;
-  insert(item: Omit<Item, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>, tenantId: string): Promise<Item>;
-  update(id: string, patch: Partial<Pick<Item, 'name' | 'price' | 'stock'>>, tenantId: string): Promise<void>;
-  softDelete(id: string, tenantId: string): Promise<void>;
-  decrementStock(id: string, quantity: number, tenantId: string): Promise<void>;
-}
-
-export class SqliteItemRepository implements IItemRepository {
+export class SqliteItemRepository implements IItemRepositoryPort {
   constructor(private readonly db: PowerSyncDatabase) {}
 
   async findAll(tenantId: string): Promise<Item[]> {
@@ -37,7 +28,7 @@ export class SqliteItemRepository implements IItemRepository {
   }
 
   async findById(id: string, tenantId: string): Promise<Item | null> {
-    const row = await this.db.get<Item>(
+    const row = await this.db.getOptional<Item>(
       `SELECT id, tenant_id, type, name, price, stock,
               created_at, updated_at, deleted_at
        FROM items WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL`,
