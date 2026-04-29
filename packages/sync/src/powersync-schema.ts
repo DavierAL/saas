@@ -56,6 +56,7 @@ const orders = new Table(
   {
     tenant_id:    { type: ColumnType.TEXT },
     user_id:      { type: ColumnType.TEXT },
+    customer_name: { type: ColumnType.TEXT },
     status:       { type: ColumnType.TEXT },
     total_amount: { type: ColumnType.INTEGER },
     currency:     { type: ColumnType.TEXT },  // snapshot of tenant currency at time of sale

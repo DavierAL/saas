@@ -14,6 +14,7 @@ export interface CheckoutLineInput {
 export interface CheckoutInput {
   readonly tenant_id: string;
   readonly user_id: string;
+  readonly customer_name?: string;
   readonly lines: readonly CheckoutLineInput[];
 }
 
@@ -91,6 +92,7 @@ export const checkout = async (
     id:           orderId,
     tenant_id:    input.tenant_id,
     user_id:      input.user_id,
+    customer_name: input.customer_name ?? null,
     currency:     currency, // [DOM-008]
     status:       'paid',  // POS: paid immediately at counter
     total_amount: total.amount,

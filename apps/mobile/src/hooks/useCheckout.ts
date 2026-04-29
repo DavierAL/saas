@@ -10,7 +10,6 @@ import { checkout } from '@saas-pos/application';
 import { SqliteOrderRepository } from '@saas-pos/db';
 import { SqliteItemRepository } from '@saas-pos/db';
 import { SqliteTenantRepository } from '@saas-pos/db';
-import * as Sentry from '@sentry/react-native';
 import { useCartStore } from '../store/cart.store';
 import { useAuth } from '../providers/AppProvider';
 import type { Order } from '@saas-pos/domain';
@@ -19,7 +18,7 @@ type CheckoutState = 'idle' | 'processing' | 'success' | 'error';
 
 export const useCheckout = () => {
   const db = usePowerSync();
-  const { tenantId } = useAuth();
+  const { tenantId, session } = useAuth();
   const cart = useCartStore();
 
   const [state, setState] = useState<CheckoutState>('idle');
@@ -36,7 +35,8 @@ export const useCheckout = () => {
       const order = await checkout(
         {
           tenant_id: tenantId,
-          user_id: 'demo-user-id',  // Phase 3 will use real auth user
+          user_id: session?.user?.id ?? 'unknown',
+          customer_name: cart.customerName || undefined,
           lines: cart.items.map((item) => ({
             item_id:    item.item_id,
             quantity:   item.quantity,
@@ -55,13 +55,7 @@ export const useCheckout = () => {
       setState('success');
       return 'success';
     } catch (err: any) {
-      Sentry.captureException(err, {
-        extra: {
-          tenantId,
-          itemCount: cart.items.length,
-          total: cart.total(),
-        }
-      });
+      console.error('[Checkout Error]', err);
       setError(err.message || 'Error desconocido al procesar el pago');
       setState('error');
       return 'error';

@@ -1,0 +1,30 @@
+# 🚀 Guía de Comandos: Móvil
+
+He creado un archivo permanente en tu proyecto llamado `MOBILE_DEPLOYMENT_GUIDE.md` con todos los detalles. Aquí tienes el resumen ejecutivo:
+
+### 🛠️ Modo Desarrollo
+Para programar y ver cambios en tiempo real.
+
+1.  **`npm install --legacy-peer-deps`** (Raíz)
+    *   *Por qué*: Instala librerías. Usamos el flag `legacy` por el conflicto React 18/19 en el monorepo.
+2.  **`npx expo prebuild`** (`apps/mobile`)
+    *   *Por qué*: Sincroniza tu configuración de `app.json` con la carpeta nativa `/android`. Hazlo si cambias iconos, nombre de la app o instalas plugins.
+3.  **`npm run android`** (Raíz)
+    *   *Por qué*: Compila la app, la instala en tu dispositivo y abre el servidor de Metro. **Es el comando principal que usarás.**
+
+---
+
+### 📦 Modo Producción
+Para generar el APK final que puedes enviar por WhatsApp o instalar en cualquier sitio.
+
+1.  **`cd apps/mobile/android`**
+2.  **`./gradlew assembleRelease`**
+    *   *Por qué*: Genera el archivo APK optimizado. Lo encontrarás en:
+        `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
+
+---
+
+### 🆘 En caso de error (Windows)
+Si al intentar borrar o mover archivos te dice que están "bloqueados" por otro proceso:
+*   Ejecuta: `taskkill /F /IM java.exe`
+*   *Por qué*: Cierra Gradle a la fuerza para liberar los archivos.

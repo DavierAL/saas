@@ -18,10 +18,12 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useItems } from '../../src/hooks/useItems';
 import { useSyncStatus } from '../../src/hooks/useSyncStatus';
+import { useTenant } from '../../src/hooks/useTenant';
 import { useCartStore } from '../../src/store/cart.store';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import type { Item } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
+import { Skeleton } from '../../src/components/Skeleton';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type Category = 'all' | 'product' | 'service';
@@ -45,16 +47,16 @@ function SyncBadge() {
   );
 }
 
-/** [UX-016] Skeleton loader — 7 placeholder rows while data loads */
+/** [UX-016] Skeleton loader — placeholder rows while data loads */
 function SkeletonRow() {
   return (
     <View style={st.skeletonRow}>
-      <View style={st.skeletonPill} />
+      <Skeleton width={24} height={24} borderRadius={radius.sm} />
       <View style={st.skeletonInfo}>
-        <View style={st.skeletonLine} />
-        <View style={[st.skeletonLine, { width: '40%', marginTop: spacing[1.5] }]} />
+        <Skeleton width="70%" height={14} style={{ marginBottom: spacing[1.5] }} />
+        <Skeleton width="40%" height={10} />
       </View>
-      <View style={st.skeletonPrice} />
+      <Skeleton width={55} height={18} />
     </View>
   );
 }
@@ -74,9 +76,11 @@ function EmptyState({
   if (isSearch) {
     return (
       <View style={st.emptyWrap}>
-        <Ionicons name="search-outline" size={52} color="#333" />
+        <View style={st.emptyIconContainer}>
+          <Ionicons name="search-outline" size={48} color={colors.bg.surface} />
+        </View>
         <Text style={st.emptyTitle}>Sin resultados</Text>
-        <Text style={st.emptyText}>Intenta con otro nombre</Text>
+        <Text style={st.emptyText}>No encontramos nada que coincida con "{search}"</Text>
       </View>
     );
   }
@@ -84,12 +88,14 @@ function EmptyState({
   const label  = category === 'service' ? 'servicios' : 'productos';
   return (
     <View style={st.emptyWrap}>
-      <Ionicons name={icon} size={52} color="#333" />
+      <View style={st.emptyIconContainer}>
+        <Ionicons name={icon} size={48} color={colors.bg.surface} />
+      </View>
       <Text style={st.emptyTitle}>Sin {label}</Text>
       <Text style={st.emptyText}>
         {category === 'all'
-          ? 'Agrega tu primer producto desde el panel web'
-          : `No tienes ${label} en el catálogo aún`}
+          ? 'Comienza agregando productos o servicios desde el panel administrativo web'
+          : `Aún no has registrado ningún ítem en la categoría de ${label}`}
       </Text>
     </View>
   );
@@ -105,7 +111,11 @@ function CategoryTab({ label, active, onPress }: { label: string; active: boolea
 }
 
 /** Product / service row */
-function ItemRow({ item, onAdd }: { item: Item; onAdd: (item: Item) => void }) {
+function ItemRow({ 
+  item, 
+  onAdd, 
+  currency 
+}: { item: Item; onAdd: (item: Item) => void; currency: string }) {
   const isProduct = item.type === 'product';
   const outOfStock = isProduct && item.stock !== null && item.stock === 0;
   const lowStock = isProduct && item.stock !== null && item.stock > 0 && item.stock <= 3;
@@ -138,7 +148,7 @@ function ItemRow({ item, onAdd }: { item: Item; onAdd: (item: Item) => void }) {
       {/* Price + CTA */}
       <View style={st.rowRight}>
         <Text style={[st.rowPrice, outOfStock && { color: '#555' }]}>
-          {formatMoney(createMoney(item.price, 'PEN'))}
+          {formatMoney(createMoney(item.price, currency))}
         </Text>
         {!outOfStock && <Text style={st.addHint}>+ Agregar</Text>}
       </View>
@@ -152,6 +162,7 @@ export default function CatalogScreen() {
   const insets = useSafeAreaInsets();
   const { tenantId, subscriptionWarning } = useAuth();
   const { status, hasSynced } = useSyncStatus();
+  const { tenant, isLoading: isTenantLoading } = useTenant(tenantId);
 
   const rawItems = useItems(tenantId ?? '');
   const addItem  = useCartStore((s) => s.addItem);
@@ -180,6 +191,8 @@ export default function CatalogScreen() {
   const handleAdd = (item: Item) => {
     addItem({ item_id: item.id, name: item.name, unit_price: item.price });
   };
+
+  const currency = tenant?.currency || 'PEN';
 
   const productCount = rawItems.filter((i) => i.type === 'product').length;
   const serviceCount = rawItems.filter((i) => i.type === 'service').length;
@@ -239,8 +252,8 @@ export default function CatalogScreen() {
           <AnyFlashList
             data={filtered}
             keyExtractor={(i: any) => i.id}
-            estimatedItemSize={68}
-            renderItem={({ item }: any) => <ItemRow item={item} onAdd={handleAdd} />}
+            estimatedItemSize={80}
+            renderItem={({ item }: any) => <ItemRow item={item} onAdd={handleAdd} currency={currency} />}
             ItemSeparatorComponent={() => <View style={st.sep} />}
             ListEmptyComponent={
               <EmptyState isSearch={search.trim().length > 0} category={category} />
@@ -262,8 +275,8 @@ const st = StyleSheet.create({
   syncLabel:       { fontSize: 10, fontWeight: typography.weight.semibold, letterSpacing: typography.tracking.wide },
 
   // Search
-  searchBar:       { flexDirection: 'row', alignItems: 'center', margin: spacing[3], marginBottom: spacing[2], backgroundColor: colors.bg.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border.default, paddingHorizontal: spacing[3], height: 40 },
-  searchInput:     { flex: 1, color: colors.text.primary, fontSize: 14 },
+  searchBar:       { flexDirection: 'row', alignItems: 'center', margin: spacing[3], marginBottom: spacing[2], backgroundColor: colors.bg.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border.default, paddingHorizontal: spacing[3], height: 44 },
+  searchInput:     { flex: 1, color: colors.text.primary, fontSize: 14, height: '100%' },
 
   // Category tabs
   catRow:          { flexGrow: 0, paddingBottom: spacing[2.5] },
@@ -274,10 +287,7 @@ const st = StyleSheet.create({
 
   // Skeleton
   skeletonRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[3], gap: spacing[3] },
-  skeletonPill:    { width: 24, height: 24, borderRadius: radius.sm, backgroundColor: colors.bg.surface },
   skeletonInfo:    { flex: 1 },
-  skeletonLine:    { height: 12, borderRadius: radius.sm, backgroundColor: colors.bg.surface, width: '70%' },
-  skeletonPrice:   { width: 55, height: 16, borderRadius: radius.sm, backgroundColor: colors.bg.surface },
 
   // Row
   row:             { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[3] },
@@ -295,9 +305,10 @@ const st = StyleSheet.create({
   sep:             { height: 1, backgroundColor: colors.border.subtle },
 
   // Empty / error
-  emptyWrap:       { alignItems: 'center', paddingTop: spacing[16], paddingHorizontal: spacing[10] },
-  emptyTitle:      { fontSize: 16, color: colors.text.secondary, fontWeight: typography.weight.semibold, marginTop: spacing[4], marginBottom: spacing[2] },
-  emptyText:       { fontSize: 13, color: colors.text.muted, textAlign: 'center', lineHeight: 19 },
+  emptyWrap:       { alignItems: 'center', paddingTop: spacing[12], paddingHorizontal: spacing[10] },
+  emptyIconContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.bg.surface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing[4] },
+  emptyTitle:      { fontSize: 18, color: colors.text.primary, fontWeight: typography.weight.bold, marginTop: spacing[2], marginBottom: spacing[2] },
+  emptyText:       { fontSize: 14, color: colors.text.muted, textAlign: 'center', lineHeight: 20 },
   retryBtn:        { marginTop: spacing[5], backgroundColor: colors.bg.surface, borderRadius: radius.md, paddingVertical: spacing[2.5], paddingHorizontal: spacing[8], borderWidth: 1, borderColor: colors.status.error },
   retryBtnText:    { color: colors.status.error, fontWeight: typography.weight.bold, fontSize: 14 },
 

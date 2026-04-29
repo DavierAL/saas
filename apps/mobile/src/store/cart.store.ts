@@ -18,6 +18,7 @@ interface CartStore extends CartState {
   removeItem: (item_id: string) => void;
   updateQuantity: (item_id: string, quantity: number) => void;
   clearCart: () => void;
+  setCustomerName: (name: string) => void;
 
   // Derived (computed inline)
   total: () => number;
@@ -26,6 +27,7 @@ interface CartStore extends CartState {
 
 export const useCartStore = create<CartStore>((set, get) => ({
   items: [],
+  customerName: '',
 
   addItem: (item, quantity = 1) =>
     set((state) => addItemToCart(state, item, quantity)),
@@ -45,7 +47,9 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () => set({ items: [], customerName: '' }),
+
+  setCustomerName: (name) => set({ customerName: name }),
 
   total: () => getCartTotal(get(), 'PEN'),
 

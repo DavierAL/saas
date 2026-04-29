@@ -1,18 +1,39 @@
 /**
  * Cart Tab — Review cart and trigger checkout
  */
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { colors, spacing, typography, radius, Button } from '@saas-pos/ui';
 import { useCartStore } from '../../src/store/cart.store';
 import { useCheckout } from '../../src/hooks/useCheckout';
 import { formatMoney, createMoney } from '@saas-pos/domain';
+import { Ionicons } from '@expo/vector-icons';
 
 function CartItemRow({ item_id, name, unit_price, quantity }: {
   item_id: string; name: string; unit_price: number; quantity: number;
 }) {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const subtotal = createMoney(unit_price * quantity, 'PEN');
+
+  const handleManualQuantity = () => {
+    Alert.prompt(
+      'Cantidad',
+      `Ingresa la cantidad para ${name}`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'OK', 
+          onPress: (val) => {
+            const num = parseInt(val || '0', 10);
+            if (!isNaN(num)) updateQuantity(item_id, num);
+          }
+        },
+      ],
+      'plain-text',
+      quantity.toString(),
+      'number-pad'
+    );
+  };
 
   return (
     <View style={s.cartRow}>
@@ -21,12 +42,22 @@ function CartItemRow({ item_id, name, unit_price, quantity }: {
         <Text style={s.cartUnitPrice}>{formatMoney(createMoney(unit_price, 'PEN'))} c/u</Text>
       </View>
       <View style={s.cartQty}>
-        <Pressable style={s.qtyBtn} onPress={() => updateQuantity(item_id, Math.max(0, quantity - 1))}>
-          <Text style={s.qtyBtnText}>−</Text>
+        <Pressable 
+          style={s.qtyBtn} 
+          onPress={() => updateQuantity(item_id, Math.max(0, quantity - 1))}
+          hitSlop={8}
+        >
+          <Ionicons name="remove" size={16} color={colors.text.primary} />
         </Pressable>
-        <Text style={s.qtyValue}>{quantity}</Text>
-        <Pressable style={s.qtyBtn} onPress={() => updateQuantity(item_id, quantity + 1)}>
-          <Text style={s.qtyBtnText}>+</Text>
+        <Pressable onLongPress={handleManualQuantity} delayLongPress={500}>
+          <Text style={s.qtyValue}>{quantity}</Text>
+        </Pressable>
+        <Pressable 
+          style={s.qtyBtn} 
+          onPress={() => updateQuantity(item_id, quantity + 1)}
+          hitSlop={8}
+        >
+          <Ionicons name="add" size={16} color={colors.text.primary} />
         </Pressable>
       </View>
       <Text style={s.cartSubtotal}>{formatMoney(subtotal)}</Text>
@@ -38,15 +69,29 @@ export default function CartScreen() {
   const items = useCartStore((st) => st.items);
   const total = useCartStore((st) => st.total());
   const clearCart = useCartStore((st) => st.clearCart);
+  const customerName = useCartStore((st) => st.customerName);
+  const setCustomerName = useCartStore((st) => st.setCustomerName);
   const { state, error, processCheckout, reset } = useCheckout();
 
   const handleCheckout = async () => {
     const result = await processCheckout();
     if (result === 'success') {
-      Alert.alert('✓ Venta registrada', 'La orden fue guardada.', [
-        { text: 'OK', onPress: () => { reset(); router.replace('/(tabs)/orders'); } },
+      Alert.alert('✓ Venta registrada', 'La orden fue guardada exitosamente.', [
+        { text: 'Ir a órdenes', onPress: () => { reset(); router.replace('/(tabs)/orders'); } },
+        { text: 'Nueva venta', onPress: () => { reset(); router.replace('/(tabs)'); } },
       ]);
     }
+  };
+
+  const confirmClear = () => {
+    Alert.alert(
+      '¿Vaciar carrito?',
+      'Esta acción eliminará todos los productos del carrito actual.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Vaciar', style: 'destructive', onPress: clearCart },
+      ]
+    );
   };
 
   return (
@@ -60,9 +105,17 @@ export default function CartScreen() {
       <View style={s.container}>
         {items.length === 0 ? (
           <View style={s.empty}>
-            <Text style={s.emptyIcon}>◈</Text>
+            <View style={s.emptyIconContainer}>
+              <Ionicons name="cart-outline" size={64} color={colors.bg.surface} />
+            </View>
             <Text style={s.emptyTitle}>Carrito vacío</Text>
-            <Text style={s.emptyDesc}>Agrega productos desde el catálogo.</Text>
+            <Text style={s.emptyDesc}>Agrega productos o servicios desde el catálogo para comenzar un nuevo cobro.</Text>
+            <Button 
+              label="Ir al catálogo" 
+              variant="outline" 
+              onPress={() => router.replace('/(tabs)')}
+              style={{ marginTop: spacing[6] }}
+            />
           </View>
         ) : (
           <>
@@ -83,6 +136,17 @@ export default function CartScreen() {
                 <Text style={s.totalValue}>{formatMoney(createMoney(total, 'PEN'))}</Text>
               </View>
               
+              <View style={s.customerSection}>
+                <Text style={s.customerLabel}>Cliente (opcional)</Text>
+                <TextInput
+                  style={s.customerInput}
+                  placeholder="Ej: Juan Perez"
+                  placeholderTextColor={colors.text.muted}
+                  value={customerName}
+                  onChangeText={setCustomerName}
+                />
+              </View>
+
               <Button
                 label={`Cobrar · ${formatMoney(createMoney(total, 'PEN'))}`}
                 onPress={handleCheckout}
@@ -91,7 +155,7 @@ export default function CartScreen() {
                 size="lg"
               />
 
-              <Pressable onPress={clearCart} style={s.clearBtn}>
+              <Pressable onPress={confirmClear} style={s.clearBtn}>
                 <Text style={s.clearBtnText}>Vaciar carrito</Text>
               </Pressable>
             </View>
@@ -122,8 +186,20 @@ const s = StyleSheet.create({
   totalValue:         { fontSize: 22, color: colors.text.primary, fontWeight: typography.weight.bold, letterSpacing: typography.tracking.tight },
   clearBtn:           { alignItems: 'center', paddingVertical: spacing[2.5] },
   clearBtnText:       { fontSize: 13, color: colors.text.muted },
-  empty:              { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyIcon:          { fontSize: 48, marginBottom: spacing[4], color: colors.bg.surface },
-  emptyTitle:         { fontSize: 18, color: colors.text.primary, fontWeight: typography.weight.semibold, marginBottom: 6 },
-  emptyDesc:          { fontSize: 14, color: colors.text.muted },
+  empty:              { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing[8] },
+  emptyIconContainer: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.bg.surface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing[6] },
+  emptyTitle:         { fontSize: 20, color: colors.text.primary, fontWeight: typography.weight.bold, marginBottom: spacing[2] },
+  emptyDesc:          { fontSize: 14, color: colors.text.muted, textAlign: 'center', lineHeight: 20 },
+  customerSection:    { marginBottom: spacing[4] },
+  customerLabel:      { fontSize: 13, color: colors.text.secondary, fontWeight: typography.weight.medium, marginBottom: spacing[2] },
+  customerInput:      { 
+    backgroundColor: colors.bg.surface, 
+    borderRadius: radius.md, 
+    paddingHorizontal: spacing[4], 
+    paddingVertical: spacing[3],
+    fontSize: 14,
+    color: colors.text.primary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
 });

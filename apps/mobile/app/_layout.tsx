@@ -4,15 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useAuth } from '../src/providers/AppProvider';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
-import * as Sentry from '@sentry/react-native';
-
 import { colors } from '@saas-pos/ui';
-
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  debug: __DEV__, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event.
-  tracesSampleRate: 1.0, //  Capture 100% of the transactions
-});
 
 // ─── Root Layout ──────────────────────────────────────────────
 function RootContent() {
@@ -49,4 +41,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;

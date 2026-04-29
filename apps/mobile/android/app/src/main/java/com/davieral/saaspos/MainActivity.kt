@@ -1,4 +1,4 @@
-package com.saaspos.app
+package com.davieral.saaspos
 
 import android.os.Build
 import android.os.Bundle

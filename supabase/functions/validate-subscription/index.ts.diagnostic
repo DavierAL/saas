@@ -1,0 +1,132 @@
+import { serve } from "http/server.ts"
+import { createClient } from "supabase"
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization');
+    console.log('[ValidateSubscription] Request received. Version: 9 (Diagnostic)');
+    console.log('[ValidateSubscription] Auth header present:', !!authHeader);
+    if (authHeader) {
+      console.log('[ValidateSubscription] Auth header starts with:', authHeader.substring(0, 20) + '...');
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    console.log('[ValidateSubscription] Env check - URL:', !!supabaseUrl, 'Anon:', !!supabaseAnonKey, 'Service:', !!serviceKey);
+
+    if (!supabaseUrl || !supabaseAnonKey || !serviceKey) {
+      const missing = [];
+      if (!supabaseUrl) missing.push('SUPABASE_URL');
+      if (!supabaseAnonKey) missing.push('SUPABASE_ANON_KEY');
+      if (!serviceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+      throw new Error(`Internal configuration error: Missing ${missing.join(', ')}`);
+    }
+
+    // 1. User Client: For validating the caller's identity
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, { 
+      global: { headers: { Authorization: authHeader! } } 
+    });
+
+    console.log('[ValidateSubscription] Calling getUser()...');
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('[ValidateSubscription] Auth error:', authError?.message || 'No user found');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized', 
+          details: authError?.message || 'Session invalid' 
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[ValidateSubscription] Authenticated user: ${user.email}`);
+
+    // 2. Extract tenant_id
+    const appMeta = user.app_metadata || {};
+    const userMeta = user.user_metadata || {};
+    
+    const tenantId = appMeta.tenant_id ||
+      userMeta.tenant_id ||
+      appMeta.tenantId ||
+      userMeta.tenantId ||
+      (user as any).tenant_id;
+
+    console.log(`[ValidateSubscription] Extracted tenantId: ${tenantId}`);
+
+    if (!tenantId) {
+      console.error('[ValidateSubscription] No tenant_id found for user:', user.email);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing tenant association',
+          details: 'No tenant_id found in user metadata.'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. Admin Client: Fetch from DB
+    const adminClient = createClient(supabaseUrl, serviceKey);
+    console.log('[ValidateSubscription] Fetching tenant record...');
+    const { data: tenant, error: dbError } = await adminClient
+      .from('tenants')
+      .select('id, name, valid_until')
+      .eq('id', tenantId)
+      .maybeSingle();
+
+    if (dbError) {
+      console.error('[ValidateSubscription] DB Error:', dbError.message);
+      throw new Error(`Database query failed: ${dbError.message}`);
+    }
+
+    if (!tenant) {
+      console.error('[ValidateSubscription] Tenant record not found in DB for ID:', tenantId);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Tenant not found',
+          details: `The tenant record (${tenantId}) associated with your account does not exist.`
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[ValidateSubscription] Success for tenant: ${tenant.name}`);
+
+    return new Response(
+      JSON.stringify({
+        valid_until: tenant.valid_until,
+        server_time: new Date().toISOString()
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    );
+
+  } catch (error: any) {
+    console.error('[ValidateSubscription] Unhandled exception:', error.message);
+    return new Response(
+      JSON.stringify({
+        error: error?.message || 'Unknown error',
+        stack: error?.stack
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    );
+  }
+})

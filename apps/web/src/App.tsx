@@ -184,7 +184,7 @@ const s: Record<string, React.CSSProperties> = {
   logo:         { display: 'flex', alignItems: 'center', gap: 10, padding: '20px 16px 16px', borderBottom: '1px solid var(--border-light)' },
   logoMark:     { width: 28, height: 28, borderRadius: 6, backgroundColor: 'var(--accent-color)', color: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 },
   nav:          { flex: 1, padding: '8px', display: 'flex', flexDirection: 'column', gap: 2 },
-  navItem:      { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', background: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
+  navItem:      { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
   navActive:    { backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', fontWeight: 600, border: '1px solid var(--border-color)' },
   navIcon:      { fontSize: 11, opacity: 0.7 },
   sidebarBottom:{ padding: '12px 16px', borderTop: '1px solid var(--border-light)' },

@@ -21,6 +21,7 @@ import type { PowerSyncDatabase } from '@powersync/react-native';
 import { supabase } from '../lib/supabase/client';
 import type { SupabaseSession } from '../lib/supabase/client';
 import { initDatabase, getDatabase } from '../lib/powersync/database';
+import { LoadingScreen } from '../components/LoadingScreen';
 import {
   remoteValidateSubscription,
   validateSubscription,
@@ -53,10 +54,17 @@ const getValidJwtPayload = (token: string | undefined): Record<string, unknown> 
     // [AUTH-001] Validate issuer (iss)
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
     const supabaseHost = supabaseUrl.replace(/^https?:\/\//, '').split('/')[0];
-    if (supabaseHost && typeof payload.iss === 'string') {
-      if (!payload.iss.includes(supabaseHost)) {
-        console.warn(`[JWT] Issuer mismatch. Expected to contain: ${supabaseHost}`);
-        return null; // Forged or unexpected token
+    if (typeof payload.iss === 'string') {
+      try {
+        const issHost = new URL(payload.iss).hostname;
+        const expectedHost = new URL(supabaseUrl).hostname;
+        if (issHost !== expectedHost) {
+          console.warn(`[JWT] Issuer mismatch. Expected: ${expectedHost}, Got: ${issHost}`);
+          return null;
+        }
+      } catch (err) {
+        console.warn('[JWT] Invalid issuer URL format');
+        return null;
       }
     }
 
@@ -91,6 +99,7 @@ export interface AuthContextValue {
   tenantId: string | null;
   role: string | null;
   subscriptionWarning: string | null;
+  isDbReady: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -112,16 +121,29 @@ export const useAuth = () => useContext(AuthContext);
  */
 function SyncController({ 
   tenantId, 
-  onWarning 
+  onWarning,
+  onInitialized
 }: { 
   tenantId: string | null; 
   onWarning: (warning: string | null) => void;
+  onInitialized: () => void;
 }) {
   useEffect(() => {
     if (!tenantId) return;
     
     let cancelled = false;
     const db = getDatabase();
+
+    // ── Watch Sync Status ────────────────────────────────
+    const statusUnsubscribe = db.onChange(({ status }) => {
+      console.log('[SyncController] Status Change:', 
+        status.connected ? 'Connected' : 'Disconnected', 
+        `(hasSynced: ${status.hasSynced})`
+      );
+      if (status.lastError) {
+        console.error('[SyncController] Sync Error:', status.lastError.message);
+      }
+    });
 
     initDatabase()
       .then(async (database) => {
@@ -136,9 +158,29 @@ function SyncController({
         remoteValidateSubscription(tenantId, {
           tenantRepo: repo,
           remoteValidator,
-        }).then(async () => {
+        }).then(async (remoteResult) => {
           if (cancelled) return;
-          const status = await validateSubscription(tenantId, repo);
+          
+          let status = await validateSubscription(tenantId, repo);
+          
+          // [FIX] If local DB doesn't have the tenant yet (sync pending), 
+          // but we just got a valid remote result, use the remote result!
+          if (!status.allowed && remoteResult) {
+             const isValid = new Date(remoteResult.valid_until) > new Date();
+             if (isValid) {
+               console.log('[SyncController] Local DB empty, using remote result override.');
+               status = {
+                 allowed: true,
+                 subscription: {
+                   isActive: true,
+                   daysRemaining: Math.floor((new Date(remoteResult.valid_until).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+                   hoursRemaining: 0,
+                   isExpiringSoon: false
+                 }
+               };
+             }
+          }
+
           console.log('[SyncController] Remote validation finished. Status:', status.allowed ? 'Valid' : 'Invalid');
           onWarning(status.warning ?? null);
         }).catch(err => {
@@ -147,23 +189,28 @@ function SyncController({
 
         // Initial local check
         const initialStatus = await validateSubscription(tenantId, repo);
-        onWarning(initialStatus.warning ?? null);
+        onInitialized();
       })
       .catch((err: Error) => {
         console.error('[SyncController] init failed:', err.message);
+        onInitialized(); // Still mark as initialized to avoid infinite loading, or handle error state
       });
-
-    return () => { cancelled = true; };
+    
+    return () => { 
+      cancelled = true; 
+      statusUnsubscribe();
+    };
   }, [tenantId]);
 
   return null;
 }
 
 // ─── App Provider ─────────────────────────────────────────────
-export function AppProvider({ children }: { children: any }) {
+export function AppProvider({ children }: { children: ReactNode }) {
   // undefined = still loading, null = no session, Session = authenticated
   const [session, setSession] = useState<SupabaseSession | null | undefined>(undefined);
   const [subscriptionWarning, setSubscriptionWarning] = useState<string | null>(null);
+  const [isDbReady, setIsDbReady] = useState(false);
 
   useEffect(() => {
     // 1. Load existing session
@@ -183,6 +230,7 @@ export function AppProvider({ children }: { children: any }) {
     // 3. Expiration checker loop
     const interval = setInterval(async () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
+
       if (currentSession?.access_token) {
         const payload = getValidJwtPayload(currentSession.access_token);
         if (payload && typeof payload.exp === 'number') {
@@ -204,7 +252,6 @@ export function AppProvider({ children }: { children: any }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
-
   const activeSession = session ?? null;
   const tenantId = extractClaim(activeSession?.access_token, 'tenant_id');
   const role     = extractClaim(activeSession?.access_token, 'role');
@@ -215,15 +262,25 @@ export function AppProvider({ children }: { children: any }) {
     tenantId,
     role,
     subscriptionWarning,
+    isDbReady,
     signOut,
   };
 
   const db = getDatabase();
 
+  // If session is undefined, we are still loading the initial auth state
+  if (session === undefined) {
+    return <LoadingScreen message="Iniciando sesión..." />;
+  }
+
   return (
     <AuthContext.Provider value={authValue}>
       <PowerSyncContext.Provider value={db}>
-        <SyncController tenantId={tenantId} onWarning={setSubscriptionWarning} />
+        <SyncController 
+          tenantId={tenantId} 
+          onWarning={setSubscriptionWarning} 
+          onInitialized={() => setIsDbReady(true)}
+        />
         {children}
       </PowerSyncContext.Provider>
     </AuthContext.Provider>

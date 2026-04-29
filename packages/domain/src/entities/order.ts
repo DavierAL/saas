@@ -35,6 +35,7 @@ export interface Order {
   readonly id: string;
   readonly tenant_id: string;
   readonly user_id: string;
+  readonly customer_name: string | null;
   readonly status: OrderStatus;
   readonly total_amount: number; // integer cents
   readonly currency: string;     // [DOM-008] Order currency snapshot

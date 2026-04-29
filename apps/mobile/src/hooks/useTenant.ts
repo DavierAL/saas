@@ -1,35 +1,55 @@
-import { usePowerSyncQuery } from '@powersync/react-native';
-import type { Tenant } from '@saas-pos/domain';
+import { useState, useEffect } from 'react';
+import { getDatabase } from '../lib/powersync/database';
 
-interface RawTenantRow {
+export interface Tenant {
   id: string;
   name: string;
-  industry_type: string;
-  modules_config: string;  // JSON string in SQLite
-  valid_until: string;
-  last_remote_validation_at: string | null;
   currency: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  industry_type: string;
 }
 
-export const useTenant = (tenantId: string): Tenant | null => {
-  const data = usePowerSyncQuery<RawTenantRow>(
-    `SELECT id, name, industry_type, modules_config, valid_until, 
-            last_remote_validation_at, currency,
-            created_at, updated_at, deleted_at
-     FROM tenants WHERE id = ?`,
-    [tenantId],
-  );
+export function useTenant(tenantId: string | null) {
+  const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const row = data?.[0];
-  if (!row) return null;
+  useEffect(() => {
+    if (!tenantId) {
+      setIsLoading(false);
+      return;
+    }
 
-  return {
-    ...row,
-    industry_type: row.industry_type as Tenant['industry_type'],
-    modules_config: JSON.parse(row.modules_config) as Tenant['modules_config'],
-    last_remote_validation_at: row.last_remote_validation_at ?? undefined,
-  };
-};
+    setIsLoading(true);
+    const db = getDatabase();
+
+    // Use getOptional() instead of get() — get() throws "Result set is empty"
+    // when no row exists (e.g., during initial sync). getOptional() returns null.
+    db.getOptional<Tenant>('SELECT * FROM tenants WHERE id = ?', [tenantId])
+      .then((res) => {
+        setTenant(res);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        // Only log if it's a real DB error, not just a missing row during sync
+        if (!err.message.includes('Result set is empty')) {
+          console.warn('[useTenant] DB error fetching tenant:', err.message);
+        }
+        setIsLoading(false);
+      });
+
+    // Watch for live changes (fires when PowerSync syncs the tenant row)
+    const unsubscribe = db.watch('SELECT * FROM tenants WHERE id = ?', [tenantId], {
+      onResult: (result) => {
+        const row = result.rows?.[0] ?? null;
+        setTenant(row);
+        setIsLoading(false);
+        if (row) {
+          console.log(`[useTenant] Tenant synced locally: ${row.name}`);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [tenantId]);
+
+  return { tenant, isLoading };
+}

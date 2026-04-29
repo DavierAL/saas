@@ -6,18 +6,17 @@
     "orientation": "portrait",
     "scheme": "saas-pos",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saaspos.app"
     },
     "android": {
-      "package": "com.saaspos.app"
+      "package": "com.davieral.saaspos"
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite",
-      "@sentry/react-native"
+      "expo-sqlite"
     ],
     "extra": {
       "router": {},

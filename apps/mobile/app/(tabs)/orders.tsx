@@ -20,6 +20,7 @@ import { useOrders } from '../../src/hooks/useOrders';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import type { Order } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
+import { Skeleton } from '../../src/components/Skeleton';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,23 @@ function OrderRow({ order, onPress }: { order: Order; onPress: () => void }) {
   );
 }
 
+function OrderSkeleton() {
+  return (
+    <View style={s.row}>
+      <View style={s.rowLeft}>
+        <Skeleton width={80} height={16} style={{ marginBottom: 4 }} />
+        <Skeleton width={120} height={12} />
+      </View>
+      <View style={{ marginHorizontal: spacing[2] }}>
+        <Skeleton width={60} height={20} borderRadius={10} />
+      </View>
+      <View style={s.rowRight}>
+        <Skeleton width={70} height={18} />
+      </View>
+    </View>
+  );
+}
+
 // ─── main screen ──────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 20;
@@ -137,15 +155,16 @@ export default function OrdersScreen() {
   const todayTotal = useMemo(() => todayPaid.reduce((s, o) => s + o.total_amount, 0), [todayPaid]);
 
   const handleEndReached = useCallback(() => {
-    if (!hasMore || loadingMore || search) return;
+    // Avoid loading more if searching or already loading or no more items
+    if (!hasMore || loadingMore || search.trim() || isLoading) return;
     
     setLoadingMore(true);
-    // Add small delay for smoothness
+    // Add small delay for smoothness to show the spinner
     setTimeout(() => {
       loadMore();
       setLoadingMore(false);
-    }, 150);
-  }, [hasMore, loadingMore, search, loadMore]);
+    }, 300);
+  }, [hasMore, loadingMore, search, loadMore, isLoading]);
 
   const handleFilterChange = (f: DateFilter) => {
     setDateFilter(f);
@@ -223,36 +242,49 @@ export default function OrdersScreen() {
         </Text>
 
         {/* List */}
-        <AnyFlashList
-          data={displayed as any}
-          keyExtractor={(o: any) => o.id}
-          estimatedItemSize={84}
-          renderItem={({ item }: any) => (
-            <OrderRow
-              order={item}
-              onPress={() => router.push({ pathname: '/order-detail', params: { orderId: item.id } })}
-            />
-          )}
-          ItemSeparatorComponent={() => <View style={s.sep} />}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={
-            loadingMore ? (
-              <View style={s.loadingFooter}>
-                <ActivityIndicator color={colors.status.success} size="small" />
+        {isLoading && displayed.length === 0 ? (
+          <View style={{ flex: 1 }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <React.Fragment key={i}>
+                <OrderSkeleton />
+                <View style={s.sep} />
+              </React.Fragment>
+            ))}
+          </View>
+        ) : (
+          <AnyFlashList
+            data={displayed as any}
+            keyExtractor={(o: any) => o.id}
+            estimatedItemSize={84}
+            renderItem={({ item }: any) => (
+              <OrderRow
+                order={item}
+                onPress={() => router.push({ pathname: '/order-detail', params: { orderId: item.id } })}
+              />
+            )}
+            ItemSeparatorComponent={() => <View style={s.sep} />}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={s.loadingFooter}>
+                  <ActivityIndicator color={colors.status.success} size="small" />
+                </View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <View style={s.emptyIconContainer}>
+                  <Ionicons name="receipt-outline" size={48} color={colors.bg.surface} />
+                </View>
+                <Text style={s.emptyTitle}>Sin órdenes</Text>
+                <Text style={s.emptyText}>
+                  {search ? 'No se encontraron órdenes con ese ID' : 'Las ventas aparecerán aquí una vez que realices el primer cobro'}
+                </Text>
               </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View style={s.empty}>
-              <Ionicons name="receipt-outline" size={48} color={colors.bg.surface} />
-              <Text style={s.emptyTitle}>Sin órdenes</Text>
-              <Text style={s.emptyText}>
-                {search ? 'No se encontraron órdenes con ese ID' : 'Las ventas aparecerán aquí'}
-              </Text>
-            </View>
-          }
-        />
+            }
+          />
+        )}
       </View>
     </>
   );
@@ -269,25 +301,25 @@ const s = StyleSheet.create({
   todayDivider:  { width: 1, backgroundColor: colors.border.default, marginVertical: 4 },
 
   // Search
-  searchBar:    { flexDirection: 'row', alignItems: 'center', margin: spacing[3], marginBottom: spacing[2], backgroundColor: colors.bg.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border.default, paddingHorizontal: spacing[3], height: 40 },
-  searchInput:  { flex: 1, color: colors.text.primary, fontSize: 14 },
+  searchBar:    { flexDirection: 'row', alignItems: 'center', margin: spacing[3], marginBottom: spacing[2], backgroundColor: colors.bg.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border.default, paddingHorizontal: spacing[3], height: 44 },
+  searchInput:  { flex: 1, color: colors.text.primary, fontSize: 14, height: '100%' },
 
   // Filter chips
-  chips:        { flexDirection: 'row', paddingHorizontal: spacing[3], gap: spacing[2], marginBottom: spacing[1] },
+  chips:        { flexDirection: 'row', paddingHorizontal: spacing[3], gap: spacing[2], marginBottom: spacing[2] },
   chip:         { paddingHorizontal: spacing[3], paddingVertical: spacing[1.5], borderRadius: radius.full, borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.bg.surface },
   chipActive:   { backgroundColor: colors.accent.greenDim, borderColor: colors.accent.green },
   chipText:     { fontSize: 12, color: colors.text.muted, fontWeight: typography.weight.semibold },
   chipTextActive: { color: colors.accent.green },
 
   // Count hint
-  countHint:    { fontSize: 11, color: colors.text.muted, paddingHorizontal: spacing[4], paddingBottom: spacing[1.5], paddingTop: spacing[0.5] },
+  countHint:    { fontSize: 11, color: colors.text.muted, paddingHorizontal: spacing[4], paddingBottom: spacing[2], paddingTop: spacing[0.5] },
 
   // Row
-  row:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[3] },
+  row:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[4] },
   rowPressed:   { backgroundColor: colors.bg.elevated },
   rowLeft:      { flex: 1 },
   rowId:        { fontSize: 13, color: colors.text.primary, fontWeight: typography.weight.semibold },
-  rowDate:      { fontSize: 11, color: colors.text.muted, marginTop: 2 },
+  rowDate:      { fontSize: 11, color: colors.text.muted, marginTop: 4 },
   rowRight:     { flexDirection: 'row', alignItems: 'center', gap: spacing[1] },
   rowTotal:     { fontSize: 15, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight, minWidth: 72, textAlign: 'right' },
 
@@ -295,7 +327,8 @@ const s = StyleSheet.create({
   loadingFooter: { paddingVertical: 20, alignItems: 'center' },
 
   // Empty
-  empty:        { alignItems: 'center', paddingTop: 60, paddingHorizontal: spacing[8] },
-  emptyTitle:   { fontSize: 16, color: colors.text.secondary, fontWeight: typography.weight.semibold, marginTop: 16, marginBottom: 6 },
-  emptyText:    { fontSize: 13, color: colors.text.muted, textAlign: 'center', lineHeight: 18 },
+  empty:        { alignItems: 'center', paddingTop: 80, paddingHorizontal: spacing[8] },
+  emptyIconContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.bg.surface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing[4] },
+  emptyTitle:   { fontSize: 18, color: colors.text.primary, fontWeight: typography.weight.bold, marginBottom: spacing[2] },
+  emptyText:    { fontSize: 14, color: colors.text.muted, textAlign: 'center', lineHeight: 20 },
 });

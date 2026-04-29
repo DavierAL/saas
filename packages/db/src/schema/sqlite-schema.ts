@@ -45,6 +45,7 @@ export const SQLITE_SCHEMA = `
     id TEXT PRIMARY KEY NOT NULL,
     tenant_id TEXT NOT NULL REFERENCES tenants(id),
     user_id TEXT NOT NULL REFERENCES users(id),
+    customer_name TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'cancelled', 'refunded', 'partially_refunded', 'voided')),
     total_amount INTEGER NOT NULL,
     currency TEXT NOT NULL DEFAULT 'PEN',

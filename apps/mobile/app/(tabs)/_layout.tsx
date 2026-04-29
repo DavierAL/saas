@@ -1,13 +1,15 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
 import { useCartStore } from '../../src/store/cart.store';
 import { SubscriptionBanner } from '../../src/components/SubscriptionBanner';
 
-function TabIcon({ symbol, color, badge }: { symbol: string; color: string; badge?: number }) {
+function TabIcon({ name, color, badge }: { name: any; color: string; badge?: number }) {
   return (
     <View style={s.iconContainer}>
-      <Text style={[s.icon, { color }]}>{symbol}</Text>
+      <Ionicons name={name} size={24} color={color} />
       {badge !== undefined && badge > 0 && (
         <View style={s.badge}>
           <Text style={s.badgeText}>{badge > 99 ? '99+' : badge}</Text>
@@ -19,6 +21,7 @@ function TabIcon({ symbol, color, badge }: { symbol: string; color: string; badg
 
 export default function TabsLayout() {
   const itemCount = useCartStore((s) => s.itemCount());
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1 }}>
@@ -30,8 +33,8 @@ export default function TabsLayout() {
             backgroundColor: colors.bg.base,
             borderTopColor: colors.border.subtle,
             borderTopWidth: 1,
-            height: 60,
-            paddingBottom: 8,
+            height: 60 + insets.bottom,
+            paddingBottom: 8 + insets.bottom,
           },
           tabBarActiveTintColor: colors.accent.green,
           tabBarInactiveTintColor: colors.text.muted,
@@ -47,7 +50,7 @@ export default function TabsLayout() {
           name="index"
           options={{
             title: 'Catálogo',
-            tabBarIcon: ({ color }) => <TabIcon symbol="⊞" color={color} />,
+            tabBarIcon: ({ color }) => <TabIcon name="grid-outline" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -55,7 +58,7 @@ export default function TabsLayout() {
           options={{
             title: 'Carrito',
             tabBarIcon: ({ color }) => (
-              <TabIcon symbol="◈" color={color} badge={itemCount} />
+              <TabIcon name="cart-outline" color={color} badge={itemCount} />
             ),
           }}
         />
@@ -63,7 +66,7 @@ export default function TabsLayout() {
           name="orders"
           options={{
             title: 'Órdenes',
-            tabBarIcon: ({ color }) => <TabIcon symbol="◉" color={color} />,
+            tabBarIcon: ({ color }) => <TabIcon name="receipt-outline" color={color} />,
           }}
         />
       </Tabs>
@@ -72,13 +75,13 @@ export default function TabsLayout() {
 }
 
 const s = StyleSheet.create({
-  iconContainer: { position: 'relative', alignItems: 'center', justifyContent: 'center', width: 32, height: 28 },
-  icon:          { fontSize: 18 },
+  iconContainer: { position: 'relative', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 },
   badge: {
-    position: 'absolute', top: -2, right: -6,
+    position: 'absolute', top: 4, right: 4,
     backgroundColor: colors.accent.green, borderRadius: radius.full,
-    minWidth: 16, height: 16,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+    minWidth: 18, height: 18,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
+    borderWidth: 2, borderColor: colors.bg.base,
   },
-  badgeText: { fontSize: 9, fontWeight: typography.weight.bold, color: colors.bg.base },
+  badgeText: { fontSize: 11, fontWeight: typography.weight.bold, color: colors.bg.base },
 });
