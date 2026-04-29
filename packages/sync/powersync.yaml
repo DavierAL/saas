@@ -5,10 +5,10 @@ streams:
   tenant_sync:
     auto_subscribe: true
     queries:
-      - SELECT * FROM public.tenants WHERE id = auth.parameter('user_metadata') ->> 'tenant_id'
-      - SELECT * FROM public.users WHERE tenant_id = auth.parameter('user_metadata') ->> 'tenant_id'
-      - SELECT * FROM public.items WHERE tenant_id = auth.parameter('user_metadata') ->> 'tenant_id' AND deleted_at IS NULL
-      - SELECT * FROM public.orders WHERE tenant_id = auth.parameter('user_metadata') ->> 'tenant_id' AND deleted_at IS NULL
-      - SELECT * FROM public.order_lines WHERE tenant_id = auth.parameter('user_metadata') ->> 'tenant_id'
-      - SELECT * FROM public.tables_restaurant WHERE tenant_id = auth.parameter('user_metadata') ->> 'tenant_id'
-      - SELECT * FROM public.appointments WHERE tenant_id = auth.parameter('user_metadata') ->> 'tenant_id'
+      - SELECT * FROM public.tenants WHERE id::text = auth.parameter('tenant_id')
+      - SELECT * FROM public.users WHERE tenant_id::text = auth.parameter('tenant_id')
+      - SELECT * FROM public.items WHERE tenant_id::text = auth.parameter('tenant_id') AND deleted_at IS NULL
+      - SELECT * FROM public.orders WHERE tenant_id::text = auth.parameter('tenant_id') AND deleted_at IS NULL
+      - SELECT * FROM public.order_lines WHERE tenant_id::text = auth.parameter('tenant_id')
+      - SELECT * FROM public.tables_restaurant WHERE tenant_id::text = auth.parameter('tenant_id')
+      - SELECT * FROM public.appointments WHERE tenant_id::text = auth.parameter('tenant_id')
