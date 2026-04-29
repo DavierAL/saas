@@ -46,9 +46,9 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    if (!supabaseUrl || !serviceKey) {
-        console.error("[validate-subscription] Missing environment variables");
-        throw new Error("Missing Supabase environment variables (SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)");
+    if (!supabaseUrl) {
+        console.error("[validate-subscription] Missing SUPABASE_URL");
+        throw new Error("Missing SUPABASE_URL environment variable");
     }
 
     // [DEBUG] Check if we have a valid token
@@ -90,9 +90,9 @@ serve(async (req) => {
       );
     }
 
-    // Lookup subscription using admin privileges
-    const admin = createClient(supabaseUrl, serviceKey);
-    const { data: tenant, error: dbErr } = await admin
+    // Lookup subscription using user privileges (RLS handles isolation)
+    console.log(`[validate-subscription] Fetching tenant info for ${tenantId}...`);
+    const { data: tenant, error: dbErr } = await userClient
       .from("tenants")
       .select("valid_until, name")
       .eq("id", tenantId)

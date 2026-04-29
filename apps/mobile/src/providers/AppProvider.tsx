@@ -68,8 +68,10 @@ const getValidJwtPayload = (token: string | undefined): Record<string, unknown> 
       }
     }
 
+    console.log('[JWT] Payload:', JSON.stringify(payload, null, 2));
     return payload;
-  } catch {
+  } catch (err) {
+    console.error('[JWT] Decode error:', err);
     return null;
   }
 };
@@ -83,12 +85,21 @@ const extractClaim = (token: string | undefined, claim: string): string | null =
   }
 
   // Priority: 1. Root claim (from hook), 2. app_metadata, 3. user_metadata
-  const value = (payload[claim] as string) ?? 
-                ((payload.app_metadata as any)?.[claim] as string) ??
-                ((payload.user_metadata as any)?.[claim] as string) ??
-                null;
+  let value: string | null = null;
+  let source = 'none';
 
-  console.log(`[JWT] Extracted claim '${claim}':`, value);
+  if (payload[claim]) {
+    value = payload[claim] as string;
+    source = 'root';
+  } else if ((payload.app_metadata as any)?.[claim]) {
+    value = (payload.app_metadata as any)?.[claim] as string;
+    source = 'app_metadata';
+  } else if ((payload.user_metadata as any)?.[claim]) {
+    value = (payload.user_metadata as any)?.[claim] as string;
+    source = 'user_metadata';
+  }
+
+  console.log(`[JWT] Extracted claim '${claim}':`, value, `(from ${source})`);
   return value;
 };
 
@@ -253,8 +264,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
   const activeSession = session ?? null;
-  const tenantId = extractClaim(activeSession?.access_token, 'tenant_id');
-  const role     = extractClaim(activeSession?.access_token, 'role');
+  
+  // Memoize tenant/role to prevent unnecessary effect triggers in children
+  const { tenantId, role } = React.useMemo(() => {
+    const tId = extractClaim(activeSession?.access_token, 'tenant_id');
+    const r = extractClaim(activeSession?.access_token, 'role');
+    return { tenantId: tId, role: r };
+  }, [activeSession?.access_token]);
 
   const authValue: AuthContextValue = {
     session: activeSession,
