@@ -1,108 +1,101 @@
-/**
- * PowerSync TypeScript Schema
- *
- * Mirrors the SQLite schema but uses PowerSync's Column/Table API.
- * PowerSync uses this to:
- *   1. Generate the SQLite CREATE TABLE statements on first launch
- *   2. Type-check sync rules
- *
- * NOTE: PowerSync stores all UUIDs as TEXT and all integers as INTEGER.
- * The `id` column is implicit (PowerSync adds it automatically as TEXT PRIMARY KEY).
- */
-import { Schema, Table, ColumnType } from '@powersync/react-native';
+import { column, Schema, Table } from '@powersync/react-native';
 
 const tenants = new Table(
   {
-    name:            { type: ColumnType.TEXT },
-    industry_type:   { type: ColumnType.TEXT },
-    modules_config:  { type: ColumnType.TEXT },
-    valid_until:     { type: ColumnType.TEXT },
-    currency:        { type: ColumnType.TEXT },  // e.g. 'PEN', 'USD'
-    last_remote_validation_at: { type: ColumnType.TEXT },
-    created_at:      { type: ColumnType.TEXT },
-    updated_at:      { type: ColumnType.TEXT },
-    deleted_at:      { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    name: column.text,
+    industry_type: column.text,
+    modules_config: column.text,
+    valid_until: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text,
+    currency: column.text,
+    last_remote_validation_at: column.text
   },
-  { indexes: {} },
+  { indexes: {} }
 );
 
 const users = new Table(
   {
-    tenant_id:     { type: ColumnType.TEXT },
-    email:         { type: ColumnType.TEXT },
-    role:          { type: ColumnType.TEXT },
-    created_at:    { type: ColumnType.TEXT },
-    updated_at:    { type: ColumnType.TEXT },
-    deleted_at:    { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    tenant_id: column.text,
+    email: column.text,
+    password_hash: column.text,
+    role: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text
   },
-  { indexes: { tenant: ['tenant_id'] } },
+  { indexes: {} }
 );
 
 const items = new Table(
   {
-    tenant_id:  { type: ColumnType.TEXT },
-    type:       { type: ColumnType.TEXT },
-    name:       { type: ColumnType.TEXT },
-    price:      { type: ColumnType.INTEGER },
-    stock:      { type: ColumnType.INTEGER },
-    created_at: { type: ColumnType.TEXT },
-    updated_at: { type: ColumnType.TEXT },
-    deleted_at: { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    tenant_id: column.text,
+    type: column.text,
+    name: column.text,
+    price: column.integer,
+    stock: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text
   },
-  { indexes: { tenant: ['tenant_id'] } },
+  { indexes: {} }
 );
 
 const orders = new Table(
   {
-    tenant_id:    { type: ColumnType.TEXT },
-    user_id:      { type: ColumnType.TEXT },
-    customer_name: { type: ColumnType.TEXT },
-    status:       { type: ColumnType.TEXT },
-    total_amount: { type: ColumnType.INTEGER },
-    currency:     { type: ColumnType.TEXT },  // snapshot of tenant currency at time of sale
-    created_at:   { type: ColumnType.TEXT },
-    updated_at:   { type: ColumnType.TEXT },
-    deleted_at:   { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    tenant_id: column.text,
+    user_id: column.text,
+    status: column.text,
+    total_amount: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text,
+    currency: column.text,
+    customer_name: column.text
   },
-  { indexes: { tenant: ['tenant_id'], status: ['status'] } },
+  { indexes: {} }
 );
 
 const order_lines = new Table(
   {
-    order_id:   { type: ColumnType.TEXT },
-    item_id:    { type: ColumnType.TEXT },
-    quantity:   { type: ColumnType.INTEGER },
-    unit_price: { type: ColumnType.INTEGER },
-    subtotal:   { type: ColumnType.INTEGER },
-    tenant_id:  { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    order_id: column.text,
+    item_id: column.text,
+    quantity: column.integer,
+    unit_price: column.integer,
+    subtotal: column.integer,
+    tenant_id: column.text
   },
-  { indexes: { order: ['order_id'], tenant: ['tenant_id'] } },
+  { indexes: {} }
 );
 
 const tables_restaurant = new Table(
   {
-    tenant_id:    { type: ColumnType.TEXT },
-    table_number: { type: ColumnType.INTEGER },
-    status:       { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    tenant_id: column.text,
+    table_number: column.integer,
+    status: column.text
   },
-  { indexes: { tenant: ['tenant_id'] } },
+  { indexes: {} }
 );
 
 const appointments = new Table(
   {
-    tenant_id:     { type: ColumnType.TEXT },
-    customer_name: { type: ColumnType.TEXT },
-    item_id:       { type: ColumnType.TEXT },
-    start_time:    { type: ColumnType.TEXT },
-    status:        { type: ColumnType.TEXT },
+    // id column (text) is automatically included
+    tenant_id: column.text,
+    customer_name: column.text,
+    item_id: column.text,
+    start_time: column.text,
+    status: column.text
   },
-  { indexes: { tenant: ['tenant_id'] } },
+  { indexes: {} }
 );
 
-/**
- * AppSchema — the central PowerSync schema.
- * Import this wherever you instantiate PowerSyncDatabase.
- */
 export const AppSchema = new Schema({
   tenants,
   users,
@@ -110,7 +103,7 @@ export const AppSchema = new Schema({
   orders,
   order_lines,
   tables_restaurant,
-  appointments,
+  appointments
 });
 
 export type Database = (typeof AppSchema)['types'];

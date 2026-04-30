@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius, Button } from '@saas-pos/ui';
 
 interface ErrorScreenProps {

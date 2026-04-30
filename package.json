@@ -16,6 +16,8 @@
     "ios": "expo run:ios"
   },
   "devDependencies": {
+    "@types/react": "~19.1.10",
+    "@types/react-dom": "~19.1.0",
     "turbo": "^2.4.0",
     "typescript": "~5.7.0"
   },

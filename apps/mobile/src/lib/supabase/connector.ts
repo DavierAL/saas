@@ -23,26 +23,31 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
    * PowerSync verifies the Supabase JWT to determine which
    * bucket_definitions apply to this user.
    */
-  async fetchCredentials() {
-    console.log('[SupabaseConnector] Fetching credentials...');
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
-
+  async fetchCredentials(): Promise<PowerSyncCredentials> {
+    console.log('[SupabaseConnector] Fetching fresh credentials...');
+    
+    // getSession() automatically handles token refresh if the Supabase client is configured with storage
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
     if (error) {
-      console.error('[SupabaseConnector] getSession error:', error.message);
+      console.error('[SupabaseConnector] ❌ Session error:', error.message);
       throw error;
     }
+
     if (!session) {
-      console.warn('[SupabaseConnector] No active session found.');
-      throw new Error('No active session. Please log in.');
+      console.warn('[SupabaseConnector] ⚠️ No active session found');
+      throw new Error('No session');
     }
 
-    console.log('[SupabaseConnector] Credentials fetched successfully. Token present:', !!session.access_token);
+    const endpoint = process.env.EXPO_PUBLIC_POWERSYNC_URL;
+    if (!endpoint) {
+      throw new Error('EXPO_PUBLIC_POWERSYNC_URL is not defined');
+    }
 
+    console.log('[SupabaseConnector] ✅ Fresh token obtained.');
+    
     return {
-      endpoint: POWERSYNC_URL,
+      endpoint,
       token: session.access_token,
       expiresAt: session.expires_at ? new Date(session.expires_at * 1000) : undefined,
     };
@@ -56,8 +61,12 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
    * uploaded when network is available. Each operation is retry-safe.
    */
   async uploadData(database: AbstractPowerSyncDatabase): Promise<void> {
+    console.log('[SupabaseConnector] uploadData called');
     const transaction = await database.getNextCrudTransaction();
-    if (!transaction) return;
+    if (!transaction) {
+      console.log('[SupabaseConnector] No pending local writes to upload.');
+      return;
+    }
 
     let lastEntry: CrudEntry | undefined;
 

@@ -83,4 +83,9 @@ const variantStyles = {
     pressed: { backgroundColor: colors.accent.red },
     text:    { color: colors.accent.red },
   },
+  outline: {
+    btn:     { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border.default },
+    pressed: { backgroundColor: colors.bg.surface },
+    text:    { color: colors.text.primary },
+  },
 };
