@@ -34,8 +34,8 @@ export function Skeleton({ width, height, style, borderRadius = 4 }: SkeletonPro
       style={[
         s.skeleton,
         {
-          width: width as any,
-          height: height as any,
+          width,
+          height,
           borderRadius,
           opacity,
         },

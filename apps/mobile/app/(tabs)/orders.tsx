@@ -10,8 +10,7 @@ import {
   View, Text, StyleSheet, Pressable,
   TextInput, ActivityIndicator,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-const AnyFlashList = FlashList as any;
+import { FlashList, type FlashListProps, type ListRenderItem } from '@shopify/flash-list';
 import { Stack, router } from 'expo-router';
 import { useState, useMemo, useCallback } from 'react';
 import { colors, spacing, typography, radius, Badge } from '@saas-pos/ui';
@@ -252,11 +251,11 @@ export default function OrdersScreen() {
             ))}
           </View>
         ) : (
-          <AnyFlashList
-            data={displayed as any}
-            keyExtractor={(o: any) => o.id}
+          <FlashList
+            data={displayed}
+            keyExtractor={(o) => o.id}
             estimatedItemSize={84}
-            renderItem={({ item }: any) => (
+            renderItem={({ item }) => (
               <OrderRow
                 order={item}
                 onPress={() => router.push({ pathname: '/order-detail', params: { orderId: item.id } })}

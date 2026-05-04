@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
-import { FlashList } from '@shopify/flash-list';
-const AnyFlashList = FlashList as any;
+import { FlashList, type FlashListProps } from '@shopify/flash-list';
+import type { ListRenderItem } from '@shopify/flash-list';
 import { Stack } from 'expo-router';
 import { useState, useMemo } from 'react';
 import { useAuth } from '../../src/providers/AppProvider';
@@ -249,7 +249,7 @@ export default function CatalogScreen() {
             </Pressable>
           </View>
         ) : (
-          <AnyFlashList
+          <FlashList
             data={filtered}
             keyExtractor={(i: any) => i.id}
             estimatedItemSize={80}

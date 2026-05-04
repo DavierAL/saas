@@ -37,3 +37,8 @@ coverage/
 
 # Metro
 .metro-health-check*
+
+# MCP (contains secrets)
+mcp.json
+mcp.local.json
+opencode.json

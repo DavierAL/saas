@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Order } from "@saas-pos/domain";
+import type { Order, OrderLine } from "@saas-pos/domain";
 import { formatMoney, createMoney } from "@saas-pos/domain";
 import { useCases } from "../lib/use-cases";
 import { useTenantId } from "../hooks/useTenantId";
@@ -72,8 +72,8 @@ export function OrdersPage() {
     setOrderLines([]);
     try {
       if (tenantId) {
-        const lines = await useCases.orders.getLines(order.id, tenantId);
-        setOrderLines(lines as any);
+        const lines: OrderLine[] = await useCases.orders.getLines(order.id, tenantId);
+        setOrderLines(lines);
       }
     } catch (err) {
       console.error("Error fetching order lines:", err);

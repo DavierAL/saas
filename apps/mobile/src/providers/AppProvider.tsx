@@ -20,11 +20,24 @@ import {
   validateSubscription,
 } from "@saas-pos/application";
 import { SqliteTenantRepository, SupabaseRemoteValidator } from "@saas-pos/db";
+import { logger } from "@saas-pos/utils";
+
+interface JwtMetadata {
+  [key: string]: unknown;
+}
+
+interface JwtPayload {
+  iss?: string;
+  exp?: number;
+  app_metadata?: JwtMetadata;
+  user_metadata?: JwtMetadata;
+  [key: string]: unknown;
+}
 
 // ─── JWT Claim Extractor ──────────────────────────────────────
 const getValidJwtPayload = (
   token: string | undefined,
-): Record<string, unknown> | null => {
+): JwtPayload | null => {
   if (!token) return null;
   try {
     const base64 = token.split(".")[1];
@@ -50,21 +63,21 @@ const getValidJwtPayload = (
         const issHost = new URL(payload.iss).hostname;
         const expectedHost = new URL(supabaseUrl).hostname;
         if (issHost !== expectedHost) {
-          console.warn(
-            `[JWT] Issuer mismatch. Expected: ${expectedHost}, Got: ${issHost}`,
+          logger.warn(
+            `Issuer mismatch. Expected: ${expectedHost}, Got: ${issHost}`,
           );
           return null;
         }
       } catch {
-        console.warn("[JWT] Invalid issuer URL format");
+        logger.warn("Invalid issuer URL format");
         return null;
       }
     }
 
-    console.log("[JWT] Payload:", JSON.stringify(payload, null, 2));
+    logger.debug("JWT Payload:", JSON.stringify(payload, null, 2));
     return payload;
   } catch (err) {
-    console.error("[JWT] Decode error:", err);
+    logger.error("JWT Decode error:", err);
     return null;
   }
 };
@@ -83,15 +96,15 @@ const extractClaim = (
   if (payload[claim]) {
     value = payload[claim] as string;
     source = "root";
-  } else if ((payload.app_metadata as any)?.[claim]) {
-    value = (payload.app_metadata as any)[claim];
+  } else if (payload.app_metadata?.[claim]) {
+    value = payload.app_metadata[claim] as string;
     source = "app_metadata";
-  } else if ((payload.user_metadata as any)?.[claim]) {
-    value = (payload.user_metadata as any)[claim];
+  } else if (payload.user_metadata?.[claim]) {
+    value = payload.user_metadata[claim] as string;
     source = "user_metadata";
   }
 
-  console.log(`[JWT] Extracted claim '${claim}':`, value, `(from ${source})`);
+  logger.debug(`[JWT] Extracted claim '${claim}':`, value, `(from ${source})`);
   return value;
 };
 
@@ -148,14 +161,14 @@ function SyncController({
     // Registra listener ANTES de initDatabase para no perder el evento
     const removeListener = db.registerListener({
       statusChanged: (status) => {
-        console.log(
+        logger.debug(
           "[SyncController] Status Change:",
           status.connected ? "Connected" : "Disconnected",
           `(hasSynced: ${status.hasSynced})`,
         );
 
         if (status.hasSynced && !cancelled) {
-          console.log(
+          logger.debug(
             "[SyncController] ✅ hasSynced = true via status listener",
           );
           onHasSynced(true);
@@ -167,18 +180,18 @@ function SyncController({
     initDatabase()
       .then(() => {
         if (cancelled) return;
-        console.log("[SyncController] PowerSync initialized.");
+        logger.debug("[SyncController] PowerSync initialized.");
 
         // Por si el evento ya ocurrió antes de que registráramos el listener
         if (db.currentStatus?.hasSynced) {
-          console.log(
+          logger.debug(
             "[SyncController] ✅ hasSynced = true (already synced on init)",
           );
           onHasSynced(true);
         }
       })
       .catch((err) => {
-        console.error("[SyncController] init failed:", err.message);
+        logger.error("[SyncController] init failed:", err.message);
         // Aún así desbloquea la app para no dejarla colgada
         if (!initializedRef.current) {
           initializedRef.current = true;
@@ -188,9 +201,7 @@ function SyncController({
 
     return () => {
       cancelled = true;
-      if (typeof removeListener === "function") removeListener();
-      else if (removeListener && (removeListener as any).remove)
-        (removeListener as any).remove();
+      if (removeListener) removeListener();
     };
   }, [tenantId]);
 
@@ -220,7 +231,7 @@ function SyncController({
         // [DIAGNOSTIC] Verify local data presence
         const tCount = await db.execute("SELECT count(*) as c FROM tenants");
         const iCount = await db.execute("SELECT count(*) as c FROM items");
-        console.log(
+        logger.debug(
           `[SyncController] 📊 SQLite Stats: tenants=${tCount.rows?.item(0).c}, items=${iCount.rows?.item(0).c}`,
         );
 
@@ -228,30 +239,30 @@ function SyncController({
         const tables = await db.getAll(
           `SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`,
         );
-        console.log("[DEBUG] Tablas SQLite:", JSON.stringify(tables));
+        logger.debug("[DEBUG] Tablas SQLite:", JSON.stringify(tables));
 
         const buckets = await db.getAll(`SELECT * FROM ps_buckets LIMIT 5`);
-        console.log("[DEBUG] PS Buckets:", JSON.stringify(buckets));
+        logger.debug("[DEBUG] PS Buckets:", JSON.stringify(buckets));
 
         const oplog = await db.getAll(`SELECT * FROM ps_oplog LIMIT 5`);
-        console.log("[DEBUG] PS Oplog count:", oplog.length);
+        logger.debug("[DEBUG] PS Oplog count:", oplog.length);
 
         if (iCount.rows?.item(0).c > 0) {
           const sample = await db.execute(
             "SELECT tenant_id FROM items LIMIT 1",
           );
-          console.log(
+          logger.debug(
             "[SyncController] 🔍 Sample item tenant_id:",
             sample.rows?.item(0).tenant_id,
           );
-          console.log("[SyncController] 🔍 Current app tenant_id:", tenantId);
+          logger.debug("[SyncController] 🔍 Current app tenant_id:", tenantId);
         }
 
         // Fallback: si la DB local está vacía (sync aún no completó)
         if (!status.allowed && remoteResult) {
           const isValid = new Date(remoteResult.valid_until) > new Date();
           if (isValid) {
-            console.log(
+            logger.debug(
               "[SyncController] Using remote result fallback (sync in progress).",
             );
             status = {
@@ -270,12 +281,12 @@ function SyncController({
         }
 
         onWarning(status.warning ?? null);
-        console.log(
+        logger.debug(
           "[SyncController] Validation complete. Allowed:",
           status.allowed,
         );
       } catch (err: any) {
-        console.warn("[SyncController] Validation error:", err.message);
+        logger.warn("[SyncController] Validation error:", err.message);
       } finally {
         validationRunningRef.current = false;
         if (!initializedRef.current) {
@@ -311,7 +322,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log(
+      logger.debug(
         `[Auth] Auth state changed: ${event}`,
         !!newSession ? "Session exists" : "No session",
       );
@@ -335,7 +346,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           payload && payload.exp && (payload.exp as number) - now < 300;
 
         if (isExpired || isExpiringSoon) {
-          console.log("[Auth] Token invalid or expiring. Force refreshing...");
+          logger.debug("[Auth] Token invalid or expiring. Force refreshing...");
           await supabase.auth.refreshSession();
         }
       }
