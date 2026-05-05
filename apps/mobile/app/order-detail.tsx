@@ -19,6 +19,7 @@ import { useOrders } from '../src/hooks/useOrders';
 import { useOrderLines } from '../src/hooks/useOrderLines';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
+import { shareReceipt } from '../src/utils/share-receipt';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'neutral' }> = {
   paid:               { label: 'Pagado',    variant: 'success' },
@@ -132,8 +133,16 @@ export default function OrderDetailScreen() {
         {/* Actions */}
         <SectionHeader title="Acciones" />
         <View style={s.card}>
+          <Pressable 
+            style={({ pressed }) => [s.actionBtn, pressed && { backgroundColor: colors.bg.elevated }]}
+            onPress={() => shareReceipt(order, '')}
+          >
+            <Ionicons name="share-outline" size={18} color={colors.status.success} />
+            <Text style={s.actionBtnText}>Compartir Recibo</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.text.muted} style={{ marginLeft: 'auto' }} />
+          </Pressable>
           <Pressable style={({ pressed }) => [s.actionBtn, pressed && { backgroundColor: colors.bg.elevated }]}>
-            <Ionicons name="print-outline" size={18} color={colors.status.success} />
+            <Ionicons name="print-outline" size={18} color={colors.status.info} />
             <Text style={s.actionBtnText}>Reimprimir Recibo</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.text.muted} style={{ marginLeft: 'auto' }} />
           </Pressable>

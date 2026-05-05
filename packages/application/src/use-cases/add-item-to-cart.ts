@@ -9,6 +9,8 @@ export interface CartItem {
 
 export interface CartState {
   readonly items: readonly CartItem[];
+  readonly customerName?: string;
+  readonly paymentMethod?: 'cash' | 'yape' | 'plin' | 'transfer';
 }
 
 export const addItemToCart = (

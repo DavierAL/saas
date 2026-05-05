@@ -92,9 +92,31 @@ export class SupabaseItemRepository implements IItemRepositoryPort {
   }
 
   async decrementStock(id: string, quantity: number, tenantId: string): Promise<void> {
-    // In Postgres, we use an RPC to ensure atomic increment/decrement
-    // because the REST API doesn't support "SET stock = stock - X" directly without RPC.
     const { error } = await this.client.rpc('decrement_item_stock', {
+      item_id: id,
+      t_id:    tenantId,
+      qty:     quantity,
+    });
+
+    if (error) throw error;
+  }
+
+  async findLowStock(tenantId: string, defaultThreshold = 10): Promise<Item[]> {
+    const { data, error } = await this.client
+      .from('items')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null)
+      .eq('type', 'product')
+      .lt('stock', defaultThreshold)
+      .order('stock', { ascending: true });
+
+    if (error) throw error;
+    return data as Item[];
+  }
+
+  async incrementStock(id: string, quantity: number, tenantId: string): Promise<void> {
+    const { error } = await this.client.rpc('increment_item_stock', {
       item_id: id,
       t_id:    tenantId,
       qty:     quantity,

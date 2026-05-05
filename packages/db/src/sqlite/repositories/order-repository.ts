@@ -16,7 +16,7 @@ import { nowISO } from '@saas-pos/utils';
 export class SqliteOrderRepository implements IOrderRepositoryPort {
   constructor(private readonly db: PowerSyncDatabase) {}
 
-  async getAnalytics(tenantId: string, days = 7): Promise<OrderAnalytics> {
+  async getAnalytics(_tenantId: string, _days = 7): Promise<OrderAnalytics> {
     // For now, local analytics are a stub to satisfy the interface.
     // Real implementation would require complex aggregation over the orders table.
     return {

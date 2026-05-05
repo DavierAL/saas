@@ -5,6 +5,13 @@ import { OrdersPage } from './pages/OrdersPage';
 import { TenantsPage } from './pages/TenantsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import InventoryPage from './pages/InventoryPage';
+import UsersPage from './pages/UsersPage';
+import SubscriptionPage from './pages/SubscriptionPage';
+import CashClosingPage from './pages/CashClosingPage';
+import StockAlertsPage from './pages/StockAlertsPage';
+import PaymentMethodsPage from './pages/PaymentMethodsPage';
+import TablesPage from './pages/TablesPage';
+import AppointmentsPage from './pages/AppointmentsPage';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { AuthGuard } from './components/AuthGuard';
 import { LoginPage } from './pages/LoginPage';
@@ -12,16 +19,23 @@ import { RegisterPage } from './pages/RegisterPage';
 import { useTenantId } from './hooks/useTenantId';
 import { useCases } from './lib/use-cases';
 
-type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'settings';
+type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'users' | 'subscription' | 'cash-closing' | 'stock-alerts' | 'payment-methods' | 'tables' | 'appointments' | 'settings';
 
 const NAV = [
-  { id: 'overview' as NavId,   path: '/',           icon: '◼', label: 'Overview'    },
-  { id: 'catalog'  as NavId,   path: '/catalog',    icon: '◈', label: 'Catálogo'    },
-  { id: 'orders'   as NavId,   path: '/orders',     icon: '◉', label: 'Órdenes'     },
-  { id: 'tenants'  as NavId,   path: '/tenants',    icon: '◧', label: 'Tenants'     },
-  { id: 'analytics'as NavId,   path: '/analytics',  icon: '◫', label: 'Analytics'   },
-  { id: 'inventory'as NavId,   path: '/inventory',  icon: '◪', label: 'Inventario'  },
-  { id: 'settings' as NavId,   path: '/settings',   icon: '◬', label: 'Ajustes'     },
+  { id: 'overview'        as NavId,   path: '/',                 icon: '◼', label: 'Overview'       },
+  { id: 'catalog'        as NavId,   path: '/catalog',          icon: '◈', label: 'Catálogo'       },
+  { id: 'orders'         as NavId,   path: '/orders',           icon: '◉', label: 'Órdenes'        },
+  { id: 'tenants'       as NavId,   path: '/tenants',          icon: '◧', label: 'Tenants'        },
+  { id: 'analytics'     as NavId,   path: '/analytics',        icon: '◫', label: 'Analytics'      },
+  { id: 'inventory'     as NavId,   path: '/inventory',       icon: '◪', label: 'Inventario'     },
+  { id: 'users'         as NavId,   path: '/users',           icon: '◔', label: 'Usuarios'       },
+  { id: 'subscription' as NavId,   path: '/subscription',   icon: '◐', label: 'Suscripción'   },
+  { id: 'cash-closing' as NavId,   path: '/cash-closing',   icon: '◑', label: 'Cierre'        },
+  { id: 'stock-alerts'  as NavId,   path: '/stock-alerts',    icon: '⚠', label: 'Stock'         },
+  { id: 'payment-methods' as NavId, path: '/payment-methods', icon: '💳', label: 'Pagos'         },
+  { id: 'tables'        as NavId,   path: '/tables',           icon: '🪑', label: 'Mesas'          },
+  { id: 'appointments' as NavId,   path: '/appointments',    icon: '📅', label: 'Citas'         },
+  { id: 'settings'      as NavId,   path: '/settings',        icon: '◬', label: 'Ajustes'       },
 ];
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -69,7 +83,7 @@ function OverviewPage() {
     // Fetch orders to calculate today's stats
     useCases.orders.findByTenant(tenantId, undefined, 50)
       .then(orders => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0]!;
         const todayOrders = orders.filter(o => o.created_at.startsWith(today));
         const todayRevenue = todayOrders.filter(o => o.status === 'paid').reduce((acc, o) => acc + o.total_amount, 0);
         
@@ -154,6 +168,13 @@ export function App() {
                   <Route path="/tenants" element={<TenantsPage />} />
                   <Route path="/analytics" element={<AnalyticsPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
+                  <Route path="/users" element={<UsersPage />} />
+                  <Route path="/subscription" element={<SubscriptionPage />} />
+                  <Route path="/cash-closing" element={<CashClosingPage />} />
+                  <Route path="/stock-alerts" element={<StockAlertsPage />} />
+                  <Route path="/payment-methods" element={<PaymentMethodsPage />} />
+                  <Route path="/tables" element={<TablesPage />} />
+                  <Route path="/appointments" element={<AppointmentsPage />} />
                   <Route path="/settings" element={
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
                       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>

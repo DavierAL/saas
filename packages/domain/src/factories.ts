@@ -58,6 +58,7 @@ interface CreateOrderInput {
   id: string;
   tenant_id: string;
   user_id: string;
+  customer_name?: string | null;
   status: OrderStatus;
   total_amount: number; // integer cents
   currency: string;     // [DOM-008]
@@ -78,12 +79,13 @@ export const createOrder = (input: CreateOrderInput): Order => {
   return {
     id:           input.id,
     tenant_id:    input.tenant_id,
-    user_id:      input.user_id,
-    status:       input.status,
+    user_id:     input.user_id,
+    customer_name: input.customer_name ?? null,
+    status:      input.status,
     total_amount: input.total_amount,
-    currency:     input.currency.trim().toUpperCase(),
-    created_at:   input.created_at,
-    updated_at:   input.updated_at,
+    currency:    input.currency.trim().toUpperCase(),
+    created_at:  input.created_at,
+    updated_at:  input.updated_at,
     deleted_at:   input.deleted_at ?? null,
   };
 };

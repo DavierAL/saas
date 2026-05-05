@@ -19,6 +19,11 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { colors, spacing, typography, radius } from "@saas-pos/ui";
 import { supabase } from "../lib/supabase";
 import { useTenantId } from "../hooks/useTenantId";
+import {
+  exportDailySalesToCsv,
+  exportTopItemsToCsv,
+  exportRevenueByCategoryToCsv,
+} from "../utils/csv-export";
 
 /**
  * AnalyticsPage: Sales analytics dashboard with charts
@@ -55,10 +60,12 @@ export default function AnalyticsPage() {
     });
 
     setLoading(true);
+    // eslint-disable-next-line no-console
     console.log("Fetching analytics for tenant:", tenantId);
     useCases.orders
       .getAnalytics(tenantId)
       .then((res) => {
+        // eslint-disable-next-line no-console
         console.log("Analytics result:", res);
         setData(res);
         setLoading(false);
@@ -104,6 +111,26 @@ export default function AnalyticsPage() {
       >
         <h2 style={{ color: ACCENT }}>📊 Cargando estadísticas...</h2>
         <p style={{ color: TEXT_SECONDARY }}>Esto puede tomar un momento.</p>
+      </div>
+    );
+  }
+
+  if (!tenantId) {
+    return (
+      <div
+        style={{
+          backgroundColor: DARK_BG,
+          color: TEXT_PRIMARY,
+          padding: "2rem",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <h2 style={{ color: ACCENT }}>⚠️ Sin tenant</h2>
+        <p style={{ color: TEXT_SECONDARY }}>No se pudo determinar el tenant.</p>
       </div>
     );
   }
@@ -166,6 +193,57 @@ export default function AnalyticsPage() {
         <h1 style={{ marginTop: 0, fontSize: typography.size["6xl"], fontWeight: typography.weight.bold }}>
           📊 Analytics Real-time
         </h1>
+
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+          <button
+            onClick={() => data && exportDailySalesToCsv(data, tenantId)}
+            disabled={!data || data.daily_sales.length === 0}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: SURFACE,
+              color: TEXT_PRIMARY,
+              border: `1px solid ${ACCENT}`,
+              borderRadius: "4px",
+              fontWeight: 500,
+              cursor: "pointer",
+              opacity: !data || data.daily_sales.length === 0 ? 0.5 : 1,
+            }}
+          >
+            📥 Exportar Ventas Diarias
+          </button>
+          <button
+            onClick={() => data && exportTopItemsToCsv(data, tenantId)}
+            disabled={!data || data.top_items.length === 0}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: SURFACE,
+              color: TEXT_PRIMARY,
+              border: `1px solid ${ACCENT}`,
+              borderRadius: "4px",
+              fontWeight: 500,
+              cursor: "pointer",
+              opacity: !data || data.top_items.length === 0 ? 0.5 : 1,
+            }}
+          >
+            📥 Exportar Top Items
+          </button>
+          <button
+            onClick={() => data && exportRevenueByCategoryToCsv(data, tenantId)}
+            disabled={!data || data.revenue_by_category.length === 0}
+            style={{
+              padding: "0.5rem 1rem",
+              backgroundColor: SURFACE,
+              color: TEXT_PRIMARY,
+              border: `1px solid ${ACCENT}`,
+              borderRadius: "4px",
+              fontWeight: 500,
+              cursor: "pointer",
+              opacity: !data || data.revenue_by_category.length === 0 ? 0.5 : 1,
+            }}
+          >
+            📥 Exportar por Categoría
+          </button>
+        </div>
 
         {!hasSession && (
           <div

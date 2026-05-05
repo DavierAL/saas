@@ -8,6 +8,8 @@ import { useCartStore } from '../../src/store/cart.store';
 import { useCheckout } from '../../src/hooks/useCheckout';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
+import { PaymentMethodSelector } from '../../src/components/PaymentMethodSelector';
+import type { PaymentMethod } from '@saas-pos/domain';
 
 function CartItemRow({ item_id, name, unit_price, quantity }: {
   item_id: string; name: string; unit_price: number; quantity: number;
@@ -71,6 +73,8 @@ export default function CartScreen() {
   const clearCart = useCartStore((st) => st.clearCart);
   const customerName = useCartStore((st) => st.customerName);
   const setCustomerName = useCartStore((st) => st.setCustomerName);
+  const paymentMethod = useCartStore((st) => st.paymentMethod);
+  const setPaymentMethod = useCartStore((st) => st.setPaymentMethod);
   const { state, error, processCheckout, reset } = useCheckout();
 
   const handleCheckout = async () => {
@@ -106,7 +110,7 @@ export default function CartScreen() {
         {items.length === 0 ? (
           <View style={s.empty}>
             <View style={s.emptyIconContainer}>
-              <Ionicons name="cart-outline" size={64} color={colors.bg.surface} />
+              <Ionicons name="cart-outline" size={64} color={colors.text.muted} />
             </View>
             <Text style={s.emptyTitle}>Carrito vacío</Text>
             <Text style={s.emptyDesc}>Agrega productos o servicios desde el catálogo para comenzar un nuevo cobro.</Text>
@@ -146,6 +150,11 @@ export default function CartScreen() {
                   onChangeText={setCustomerName}
                 />
               </View>
+
+              <PaymentMethodSelector
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+              />
 
               <Button
                 label={`Cobrar · ${formatMoney(createMoney(total, 'PEN'))}`}

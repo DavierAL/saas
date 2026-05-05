@@ -3,6 +3,7 @@ import type { Order, OrderLine } from "@saas-pos/domain";
 import { formatMoney, createMoney } from "@saas-pos/domain";
 import { useCases } from "../lib/use-cases";
 import { useTenantId } from "../hooks/useTenantId";
+import { OrderDetailDrawer } from "../components/OrderDetailDrawer";
 
 const STATUS = {
   paid: { label: "Pagado", color: "#3ECF8E", bg: "#0d2b1e" },
@@ -265,87 +266,12 @@ export function OrdersPage() {
         </div>
       )}
 
-      {/* Modal Detail */}
-      {selectedOrder && (
-        <div style={s.modalOverlay} onClick={() => setSelectedOrder(null)}>
-          <div style={s.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={s.modalHeader}>
-              <div>
-                <h2 style={s.modalTitle}>Detalle de Orden</h2>
-                <p style={s.modalSub}>
-                  ID: {selectedOrder.id.toUpperCase()}
-                </p>
-              </div>
-              <button 
-                onClick={() => setSelectedOrder(null)}
-                style={s.closeBtn}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={s.modalBody}>
-              <div style={s.detailGrid}>
-                <div style={s.detailSection}>
-                  <p style={s.detailLabel}>Fecha y Hora</p>
-                  <p style={s.detailValue}>
-                    {new Date(selectedOrder.created_at).toLocaleString("es-PE")}
-                  </p>
-                </div>
-                <div style={s.detailSection}>
-                  <p style={s.detailLabel}>Estado</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      ...s.statusBadge,
-                      backgroundColor: STATUS[selectedOrder.status]?.bg || STATUS.cancelled.bg,
-                      color: STATUS[selectedOrder.status]?.color || STATUS.cancelled.color,
-                    }}>
-                      {STATUS[selectedOrder.status]?.label || selectedOrder.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={s.linesSection}>
-                <p style={s.detailLabel}>Productos</p>
-                {loadingLines ? (
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13, padding: '12px 0' }}>Cargando productos...</p>
-                ) : (
-                  <div style={s.linesTable}>
-                    <div style={s.lineHeader}>
-                      <span style={{ flex: 2 }}>Producto</span>
-                      <span style={{ flex: 1, textAlign: 'center' }}>Cant.</span>
-                      <span style={{ flex: 1, textAlign: 'right' }}>Subtotal</span>
-                    </div>
-                    {orderLines.map((line) => (
-                      <div key={line.id} style={s.lineRow}>
-                        <span style={{ flex: 2, color: 'var(--text-primary)', fontWeight: 500 }}>
-                          {line.item?.name || 'Producto desconocido'}
-                        </span>
-                        <span style={{ flex: 1, textAlign: 'center' }}>
-                          x{line.quantity}
-                        </span>
-                        <span style={{ flex: 1, textAlign: 'right', color: 'var(--text-primary)' }}>
-                          {formatMoney(createMoney(line.subtotal, selectedOrder.currency))}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div style={s.modalFooter}>
-                <div style={s.totalRow}>
-                  <span style={s.totalLabel}>Total</span>
-                  <span style={s.totalValue}>
-                    {formatMoney(createMoney(selectedOrder.total_amount, selectedOrder.currency))}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderDetailDrawer
+        order={selectedOrder}
+        lines={orderLines}
+        loadingLines={loadingLines}
+        onClose={() => setSelectedOrder(null)}
+      />
     </div>
   );
 }

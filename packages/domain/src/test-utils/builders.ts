@@ -96,15 +96,16 @@ export class TenantBuilder {
 
 export class OrderBuilder {
   private order: Order = {
-    id:           generateId(),
-    tenant_id:    'tenant-1',
-    user_id:      'user-1',
-    status:       'paid',
-    total_amount: 1000,
+    id:            generateId(),
+    tenant_id:     'tenant-1',
+    user_id:       'user-1',
+    customer_name: null,
+    status:        'paid',
+    total_amount:  1000,
     currency:     'PEN',
-    created_at:   nowISO(),
-    updated_at:   nowISO(),
-    deleted_at:   null,
+    created_at:    nowISO(),
+    updated_at:    nowISO(),
+    deleted_at:    null,
   };
 
   withStatus(status: OrderStatus) {

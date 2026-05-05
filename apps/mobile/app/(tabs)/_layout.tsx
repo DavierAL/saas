@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
 import { useCartStore } from '../../src/store/cart.store';
 import { SubscriptionBanner } from '../../src/components/SubscriptionBanner';
+import { OfflineBanner } from '../../src/components/OfflineBanner';
+import { useModulesConfig } from '../../src/hooks/useModulesConfig';
 
 function TabIcon({ name, color, badge }: { name: any; color: string; badge?: number }) {
   return (
@@ -22,9 +24,11 @@ function TabIcon({ name, color, badge }: { name: any; color: string; badge?: num
 export default function TabsLayout() {
   const itemCount = useCartStore((s) => s.itemCount());
   const insets = useSafeAreaInsets();
+  const modules = useModulesConfig();
 
   return (
     <View style={{ flex: 1 }}>
+      <OfflineBanner />
       <SubscriptionBanner />
       <Tabs
         screenOptions={{
@@ -69,6 +73,24 @@ export default function TabsLayout() {
             tabBarIcon: ({ color }) => <TabIcon name="receipt-outline" color={color} />,
           }}
         />
+        {modules.has_tables && (
+          <Tabs.Screen
+            name="tables"
+            options={{
+              title: 'Mesas',
+              tabBarIcon: ({ color }) => <TabIcon name="restaurant-outline" color={color} />,
+            }}
+          />
+        )}
+        {modules.has_appointments && (
+          <Tabs.Screen
+            name="appointments"
+            options={{
+              title: 'Citas',
+              tabBarIcon: ({ color }) => <TabIcon name="calendar-outline" color={color} />,
+            }}
+          />
+        )}
       </Tabs>
     </View>
   );
@@ -83,5 +105,5 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
     borderWidth: 2, borderColor: colors.bg.base,
   },
-  badgeText: { fontSize: 11, fontWeight: typography.weight.bold, color: colors.bg.base },
+  badgeText: { fontSize: 12, fontWeight: typography.weight.bold, color: colors.bg.base },
 });

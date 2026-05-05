@@ -10,11 +10,13 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
 import { FlashList, type FlashListProps } from '@shopify/flash-list';
 import type { ListRenderItem } from '@shopify/flash-list';
 import { Stack } from 'expo-router';
 import { useState, useMemo } from 'react';
+import { Alert } from 'react-native';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useItems } from '../../src/hooks/useItems';
 import { useSyncStatus } from '../../src/hooks/useSyncStatus';
@@ -158,6 +160,25 @@ function ItemRow({
 
 // ─── main screen ──────────────────────────────────────────────────────────────
 
+function ScanButton() {
+  const handlePress = () => {
+    Alert.alert(
+      'Escáner de código de barras',
+      'Esta función requiere instalar expo-camera. ¿Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Instalar', onPress: () => {} },
+      ]
+    );
+  };
+  
+  return (
+    <Pressable onPress={handlePress} style={{ padding: 8 }}>
+      <Ionicons name="barcode-outline" size={22} color={colors.text.primary} />
+    </Pressable>
+  );
+}
+
 export default function CatalogScreen() {
   const insets = useSafeAreaInsets();
   const { tenantId, subscriptionWarning } = useAuth();
@@ -199,7 +220,15 @@ export default function CatalogScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Catálogo', headerRight: () => <SyncBadge /> }} />
+      <Stack.Screen options={{ 
+        title: 'Catálogo', 
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <ScanButton />
+            <SyncBadge />
+          </View>
+        ), 
+      }} />
       <View style={[st.container, { paddingTop: Math.max(insets.top + spacing[6], spacing[10]) }]}>
         {/* Subscription Warning Banner */}
         {subscriptionWarning && (

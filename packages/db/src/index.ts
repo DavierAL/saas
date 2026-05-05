@@ -16,3 +16,4 @@ export * from './sqlite/repositories/tenant-repository';
 export * from './postgres/repositories/item-repository';
 export * from './postgres/repositories/order-repository';
 export * from './postgres/repositories/tenant-repository';
+export * from './postgres/repositories/user-repository';

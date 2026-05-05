@@ -153,16 +153,16 @@ export default function OrdersScreen() {
   );
   const todayTotal = useMemo(() => todayPaid.reduce((s, o) => s + o.total_amount, 0), [todayPaid]);
 
-  const handleEndReached = useCallback(() => {
+  const handleEndReached = useCallback(async () => {
     // Avoid loading more if searching or already loading or no more items
     if (!hasMore || loadingMore || search.trim() || isLoading) return;
     
     setLoadingMore(true);
-    // Add small delay for smoothness to show the spinner
-    setTimeout(() => {
-      loadMore();
+    try {
+      await loadMore();
+    } finally {
       setLoadingMore(false);
-    }, 300);
+    }
   }, [hasMore, loadingMore, search, loadMore, isLoading]);
 
   const handleFilterChange = (f: DateFilter) => {
@@ -296,7 +296,7 @@ const s = StyleSheet.create({
   todayBar:      { flexDirection: 'row', backgroundColor: colors.bg.surface, borderBottomWidth: 1, borderBottomColor: colors.border.default, paddingVertical: spacing[4] },
   todayStat:     { flex: 1, alignItems: 'center' },
   todayValue:    { fontSize: 20, fontWeight: typography.weight.bold, color: colors.text.primary, letterSpacing: typography.tracking.tight },
-  todayLabel:    { fontSize: 10, color: colors.text.muted, marginTop: 2, fontWeight: typography.weight.medium, letterSpacing: typography.tracking.wide, textTransform: 'uppercase' },
+  todayLabel:    { fontSize: 12, color: colors.text.muted, marginTop: 2, fontWeight: typography.weight.medium, letterSpacing: typography.tracking.wide, textTransform: 'uppercase' },
   todayDivider:  { width: 1, backgroundColor: colors.border.default, marginVertical: 4 },
 
   // Search

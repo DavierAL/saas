@@ -84,4 +84,51 @@ export class SupabaseOrderRepository implements IOrderRepositoryPort {
     if (error) throw error;
     return data as import('@saas-pos/domain').OrderAnalytics;
   }
+
+  async getDailyClosing(tenantId: string, date: string): Promise<{
+    orders: Order[];
+    totalRevenue: number;
+    orderCount: number;
+    byUser: { user_id: string; count: number; total: number }[];
+    byType: { type: string; count: number; total: number }[];
+  }> {
+    const startDate = `${date}T00:00:00`;
+    const endDate = `${date}T23:59:59`;
+
+    const { data: orders, error } = await this.client
+      .from('orders')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+      .eq('status', 'paid')
+      .is('deleted_at', null);
+
+    if (error) throw error;
+
+    const paidOrders = orders as Order[];
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total_amount, 0);
+
+    // Group by user
+    const byUserMap = new Map<string, { count: number; total: number }>();
+    for (const o of paidOrders) {
+      const existing = byUserMap.get(o.user_id) || { count: 0, total: 0 };
+      byUserMap.set(o.user_id, { count: existing.count + 1, total: existing.total + o.total_amount });
+    }
+    const byUser = Array.from(byUserMap.entries()).map(([user_id, v]) => ({ user_id, ...v }));
+
+    // Group by type (simplified - would need join with items)
+    const byType = [
+      { type: 'product', count: paidOrders.length, total: totalRevenue },
+      { type: 'service', count: 0, total: 0 },
+    ];
+
+    return {
+      orders: paidOrders,
+      totalRevenue,
+      orderCount: paidOrders.length,
+      byUser,
+      byType,
+    };
+  }
 }

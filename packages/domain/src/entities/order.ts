@@ -17,6 +17,12 @@ export type OrderStatus =
   | 'partially_refunded'
   | 'voided';
 
+export type PaymentMethod = 
+  | 'cash'
+  | 'yape'
+  | 'plin'
+  | 'transfer';
+
 /** Maps each status to the set of statuses it may legally transition into. */
 export const ORDER_STATUS_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
   pending:            ['paid', 'cancelled', 'voided'],
@@ -37,8 +43,9 @@ export interface Order {
   readonly user_id: string;
   readonly customer_name: string | null;
   readonly status: OrderStatus;
-  readonly total_amount: number; // integer cents
-  readonly currency: string;     // [DOM-008] Order currency snapshot
+  readonly total_amount: number;
+  readonly currency: string;
+  readonly payment_method?: PaymentMethod | null;
   readonly created_at: string;
   readonly updated_at: string;
   readonly deleted_at: string | null;

@@ -18,7 +18,14 @@
   --accent-border: #1a4a32;
   
   --error-color: #EF4444;
+  --error-bg: #2b0d0d;
+  --error-border: #5c1515;
   --warning-color: #F59E0B;
+  --warning-bg: #2b1e0d;
+  --warning-border: #5c4515;
+  --success-color: #3ECF8E;
+  --success-bg: #0d2b1e;
+  --success-border: #1a4a32;
 }
 
 [data-theme='light'] {
@@ -35,6 +42,15 @@
   --accent-color: #10b981;
   --accent-bg: #ecfdf5;
   --accent-border: #a7f3d0;
+  --error-color: #dc2626;
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
+  --warning-color: #d97706;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --success-color: #059669;
+  --success-bg: #ecfdf5;
+  --success-border: #a7f3d0;
 }
 
 /* Base styles */

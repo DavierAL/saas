@@ -11,6 +11,7 @@
 import { create } from 'zustand';
 import { addItemToCart, removeItemFromCart, getCartTotal } from '@saas-pos/application';
 import type { CartItem, CartState } from '@saas-pos/application';
+import type { PaymentMethod } from '@saas-pos/domain';
 
 interface CartStore extends CartState {
   // Actions
@@ -19,6 +20,7 @@ interface CartStore extends CartState {
   updateQuantity: (item_id: string, quantity: number) => void;
   clearCart: () => void;
   setCustomerName: (name: string) => void;
+  setPaymentMethod: (method: PaymentMethod | null) => void;
 
   // Derived (computed inline)
   total: () => number;
@@ -28,6 +30,7 @@ interface CartStore extends CartState {
 export const useCartStore = create<CartStore>((set, get) => ({
   items: [],
   customerName: '',
+  paymentMethod: null,
 
   addItem: (item, quantity = 1) =>
     set((state) => addItemToCart(state, item, quantity)),
@@ -47,9 +50,11 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  clearCart: () => set({ items: [], customerName: '' }),
+  clearCart: () => set({ items: [], customerName: '', paymentMethod: null }),
 
   setCustomerName: (name) => set({ customerName: name }),
+
+  setPaymentMethod: (method) => set({ paymentMethod: method }),
 
   total: () => getCartTotal(get(), 'PEN'),
 
