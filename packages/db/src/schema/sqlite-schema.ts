@@ -2,6 +2,12 @@
  * SQLite schema definitions.
  * These are the CREATE TABLE statements for the local database.
  * Every table includes tenant_id for strict multi-tenancy.
+ *
+ * SYNC CONTRACT: This schema must mirror the Supabase (PostgreSQL) schema
+ * for all columns that PowerSync replicates. Non-replicated columns
+ * (e.g. password_hash) are intentionally excluded from SQLite.
+ *
+ * Last synced with Supabase: 2026-05-05 (ADR-003)
  */
 
 export const SCHEMA_VERSION = 1;
@@ -13,7 +19,10 @@ export const SQLITE_SCHEMA = `
     industry_type TEXT NOT NULL CHECK(industry_type IN ('restaurant', 'barbershop', 'retail')),
     modules_config TEXT NOT NULL DEFAULT '{}',
     valid_until TEXT NOT NULL,
+    -- [ADR-003] Tenant currency for multi-region POS support
     currency TEXT NOT NULL DEFAULT 'PEN',
+    -- [ADR-003] Tracks last server-side subscription validation (offline paywall)
+    last_remote_validation_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at TEXT
@@ -23,6 +32,7 @@ export const SQLITE_SCHEMA = `
     id TEXT PRIMARY KEY NOT NULL,
     tenant_id TEXT NOT NULL REFERENCES tenants(id),
     email TEXT NOT NULL UNIQUE,
+    -- NOTE: password_hash is intentionally excluded from SQLite (security: no hash on device)
     role TEXT NOT NULL CHECK(role IN ('admin', 'cashier', 'waiter')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -45,9 +55,16 @@ export const SQLITE_SCHEMA = `
     id TEXT PRIMARY KEY NOT NULL,
     tenant_id TEXT NOT NULL REFERENCES tenants(id),
     user_id TEXT NOT NULL REFERENCES users(id),
+    -- [ADR-003] Optional customer name for order attribution / receipts
     customer_name TEXT,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'cancelled', 'refunded', 'partially_refunded', 'voided')),
+    -- [ADR-003] Full state machine aligned with domain/entities/order.ts
+    --   pending -> paid | cancelled | voided
+    --   paid    -> refunded | partially_refunded
+    --   cancelled, refunded, partially_refunded, voided -> (terminal)
+    status TEXT NOT NULL DEFAULT 'pending'
+      CHECK(status IN ('pending', 'paid', 'cancelled', 'refunded', 'partially_refunded', 'voided')),
     total_amount INTEGER NOT NULL,
+    -- [ADR-003] Tenant currency (denormalized for reporting without joins to tenants)
     currency TEXT NOT NULL DEFAULT 'PEN',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -60,7 +77,9 @@ export const SQLITE_SCHEMA = `
     item_id TEXT NOT NULL REFERENCES items(id),
     quantity INTEGER NOT NULL CHECK(quantity > 0),
     unit_price INTEGER NOT NULL,
-    subtotal INTEGER NOT NULL
+    subtotal INTEGER NOT NULL,
+    -- tenant_id denormalized for PowerSync sync rules (avoids joins)
+    tenant_id TEXT NOT NULL REFERENCES tenants(id)
   );
 
   CREATE TABLE IF NOT EXISTS tables_restaurant (
@@ -83,4 +102,5 @@ export const SQLITE_SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_items_tenant ON items(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_orders_tenant ON orders(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_order_lines_order ON order_lines(order_id);
+  CREATE INDEX IF NOT EXISTS idx_order_lines_tenant ON order_lines(tenant_id);
 `;

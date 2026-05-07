@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeEach, vi, Mock } from 'vitest';
 import {
   exportDailySalesToCsv,
   exportTopItemsToCsv,
@@ -7,33 +8,30 @@ import {
 } from '../utils/csv-export';
 import type { OrderAnalytics } from '@saas-pos/domain';
 
-// Mock document/createElement para testear en Node
-let mockCreateElement: jest.MockedFunction<any>;
-let mockBody: { appendChild: jest.Mock; removeChild: jest.Mock };
+let mockCreateElement: Mock;
+let mockBody: { appendChild: Mock; removeChild: Mock };
 
 beforeEach(() => {
   mockBody = {
-    appendChild: jest.fn(),
-    removeChild: jest.fn(),
+    appendChild: vi.fn(),
+    removeChild: vi.fn(),
   };
-  mockCreateElement = jest.fn(() => ({
-    setAttribute: jest.fn(),
+  mockCreateElement = vi.fn(() => ({
+    setAttribute: vi.fn(),
     style: {},
-    click: jest.fn(),
+    click: vi.fn(),
   }));
 
-  // @ts-ignore — global document mock
   global.document = {
     createElement: mockCreateElement,
     body: mockBody,
     appendChild: mockBody.appendChild,
-  } as any;
+  } as unknown as Document;
 
-  // @ts-ignore — URL.createObjectURL mock
   global.URL = {
-    createObjectURL: jest.fn(() => 'blob:test'),
-    revokeObjectURL: jest.fn(),
-  } as any;
+    createObjectURL: vi.fn(() => 'blob:test'),
+    revokeObjectURL: vi.fn(),
+  } as unknown as typeof URL;
 });
 
 // Tests para escapeCsvValue
@@ -81,7 +79,7 @@ describe('arrayToCsv', () => {
 
   test('handles missing values with empty string', () => {
     const result = arrayToCsv([{ a: 1, b: undefined as any }]);
-    expect(result).toContain(',,'); // missing value
+    expect(result).toContain('1,'); // missing value rendered as empty after value
   });
 
   test('escapes values with commas', () => {

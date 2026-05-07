@@ -2,6 +2,7 @@
 -- SaaS POS — PostgreSQL Schema (Supabase)
 -- Strategy: Additive-only migrations. Never drop columns/tables.
 -- All tables are tenant-scoped with RLS enforcement.
+-- Last synced with Supabase: 2026-05-05 (ADR-003)
 -- ============================================================
 
 -- Enable extensions
@@ -28,7 +29,11 @@ CREATE TABLE IF NOT EXISTS public.tenants (
   valid_until     TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '30 days'),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  deleted_at      TIMESTAMPTZ
+  deleted_at      TIMESTAMPTZ,
+  -- [ADR-003] Tenant currency for multi-region POS support
+  currency                  TEXT NOT NULL DEFAULT 'PEN',
+  -- [ADR-003] Tracks last server-side subscription validation (offline paywall)
+  last_remote_validation_at TIMESTAMPTZ
 );
 
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
@@ -38,7 +43,29 @@ CREATE POLICY "tenant_isolation" ON public.tenants
   FOR ALL USING (id::TEXT = public.tenant_id());
 
 -- ============================================================
--- TABLE: users  (employees / cashiers)
+-- TABLE: tenant_members
+-- [ADR-003] Links Supabase Auth users (auth.users) to their tenant.
+-- Required by the JWT auth hook to inject tenant_id into claims.
+-- This table is the source of truth for user<->tenant association.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.tenant_members (
+  auth_user_id  UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
+  role          TEXT NOT NULL DEFAULT 'cashier'
+                  CHECK (role IN ('admin', 'cashier', 'waiter')),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.tenant_members ENABLE ROW LEVEL SECURITY;
+
+-- Members can only see their own membership row
+CREATE POLICY "tenant_members_self_isolation" ON public.tenant_members
+  FOR ALL USING (auth_user_id = auth.uid());
+
+-- ============================================================
+-- TABLE: users  (employees / cashiers — app-level user profiles)
+-- NOTE: Distinct from auth.users (Supabase Auth) and tenant_members.
+--       auth.users handles authentication; this table handles POS roles.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.users (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -76,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_items_tenant_id ON public.items(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_items_type     ON public.items(type);
+CREATE INDEX IF NOT EXISTS idx_items_type      ON public.items(type);
 
 ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
 
@@ -90,12 +117,20 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
   user_id       UUID NOT NULL REFERENCES public.users(id)   ON DELETE RESTRICT,
+  -- [ADR-003] Full state machine aligned with domain/entities/order.ts
+  --   pending -> paid | cancelled | voided
+  --   paid    -> refunded | partially_refunded
+  --   cancelled, refunded, partially_refunded, voided -> (terminal)
   status        TEXT NOT NULL DEFAULT 'pending'
-                  CHECK (status IN ('pending', 'paid', 'cancelled')),
+                  CHECK (status IN ('pending', 'paid', 'cancelled', 'refunded', 'partially_refunded', 'voided')),
   total_amount  INTEGER NOT NULL CHECK (total_amount >= 0),  -- integer cents
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  deleted_at    TIMESTAMPTZ
+  deleted_at    TIMESTAMPTZ,
+  -- [ADR-003] Tenant currency (denormalized for reporting without joins to tenants)
+  currency      TEXT NOT NULL DEFAULT 'PEN',
+  -- [ADR-003] Optional customer name for order attribution / receipts
+  customer_name TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_tenant_id ON public.orders(tenant_id);
@@ -108,8 +143,8 @@ CREATE POLICY "orders_tenant_isolation" ON public.orders
   FOR ALL USING (tenant_id::TEXT = public.tenant_id());
 
 -- ============================================================
--- TABLE: order_lines  (transaction detail — no tenant_id needed,
---   access is scoped through the parent order's RLS)
+-- TABLE: order_lines  (transaction detail)
+-- tenant_id is denormalized here for PowerSync sync rules (avoids joins)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.order_lines (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -206,6 +241,7 @@ DO $$ BEGIN
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
 -- ============================================================
 -- SOFT DELETE: Ensure server-side timestamp
 -- ============================================================
