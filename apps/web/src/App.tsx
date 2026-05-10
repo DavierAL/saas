@@ -1,6 +1,8 @@
 // @ts-nocheck - TypeScript compatibility issue with react-router-dom v6 NavLink
-import { useState, useEffect } from 'react';
-import { Routes, Route, NavLink as RouterNavLink, Navigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, NavLink as RouterNavLink, Navigate, useNavigate } from 'react-router-dom';
+import { supabase } from './lib/supabase';
+import { Session } from '@supabase/supabase-js';
 import { CatalogPage } from './pages/CatalogPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { TenantsPage } from './pages/TenantsPage';
@@ -39,7 +41,7 @@ const NAV = [
   { id: 'settings'      as NavId,   path: '/settings',        icon: '◬', label: 'Ajustes'       },
 ];
 
-function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function Sidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () => void; onLogout: () => void }) {
   const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
     ...s.navItem,
     ...(isActive ? s.navActive : {}),
@@ -69,6 +71,10 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           ))}
         </nav>
         <div style={s.sidebarBottom}>
+          <button onClick={onLogout} style={s.logoutButton}>
+            <span style={s.logoutIcon}>⏻</span>
+            <span>Cerrar sesión</span>
+          </button>
           <div style={s.syncRow}>
             <span style={s.syncDot} />
             <span style={s.syncText}>Supabase · Online</span>
@@ -146,12 +152,39 @@ function OverviewPage() {
 export function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [session, setSession] = useState<Session | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_, session) => setSession(session)
+    );
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+    navigate('/login', { replace: true });
+  }, [navigate]);
+
+  const userEmail = session?.user?.email || 'Usuario';
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const handleClickOutside = () => setIsUserMenuOpen(false);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   return (
     <Routes>
@@ -160,12 +193,21 @@ export function App() {
       <Route path="/*" element={
         <AuthGuard>
           <div className="app-container">
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />
             <div className="main-content">
               <header className="mobile-header">
                 <button className="hamburger-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>
                 <span style={{ fontWeight: 600 }}>SaaS POS</span>
-                <div style={{ width: 32 }} /> {/* spacer */}
+                <div style={s.userMenuTrigger} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                  <span style={s.userAvatar}>{userEmail.charAt(0).toUpperCase()}</span>
+                </div>
+                {isUserMenuOpen && (
+                  <div style={s.userDropdown}>
+                    <div style={s.userEmail}>{userEmail}</div>
+                    <div style={s.dropdownDivider} />
+                    <button onClick={handleLogout} style={s.dropdownItem}>Cerrar sesión</button>
+                  </div>
+                )}
               </header>
               <main className="page-wrapper">
                 <Routes>
@@ -215,10 +257,18 @@ const s: Record<string, React.CSSProperties> = {
   navItem:      { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
   navActive:    { backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', fontWeight: 600, border: '1px solid var(--border-color)' },
   navIcon:      { fontSize: 11, opacity: 0.7 },
-  sidebarBottom:{ padding: '12px 16px', borderTop: '1px solid var(--border-light)' },
+  sidebarBottom:{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' },
   syncRow:      { display: 'flex', alignItems: 'center', gap: 8 },
   syncDot:      { width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent-color)' },
   syncText:     { fontSize: 11, color: 'var(--text-muted)' },
+  logoutButton: { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
+  logoutIcon:   { fontSize: 12 },
+  userMenuTrigger: { width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+  userAvatar:   { color: '#0f0f0f', fontWeight: 700, fontSize: 13 },
+  userDropdown: { position: 'absolute', top: 48, right: 16, backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 0', minWidth: 180, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100 },
+  userEmail:    { padding: '8px 16px', fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 },
+  dropdownDivider: { height: 1, backgroundColor: 'var(--border-light)', margin: '4px 0' },
+  dropdownItem: { display: 'block', width: '100%', padding: '8px 16px', border: 'none', backgroundColor: 'transparent', color: '#ef4444', fontSize: 13, cursor: 'pointer', textAlign: 'left' },
   pageContent:  { width: '100%' },
   pageHead:     { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
   pageTitle:    { fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px', margin: 0 },
