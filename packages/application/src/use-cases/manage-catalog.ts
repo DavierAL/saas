@@ -4,14 +4,40 @@ import type { IItemRepositoryPort } from '../ports/item-repository.port';
 export interface CreateItemInput {
   readonly name: string;
   readonly type: ItemType;
-  readonly price: number;  // integer cents
-  readonly stock?: number; // null for services
+  readonly price: number;
+  readonly stock?: number;
+  readonly sku?: string;
+  readonly barcode?: string;
+  readonly image_url?: string;
+  readonly cost?: number;
+  readonly brand?: string;
+  readonly category?: string;
+  readonly variant?: string;
+  readonly weight_quantity?: string;
+  readonly min_stock?: number;
+  readonly description?: string;
+  readonly has_expiry?: boolean;
+  readonly expiry_date?: string;
+  readonly expiry_comments?: string;
 }
 
 export interface UpdateItemInput {
   readonly name?: string;
   readonly price?: number;
   readonly stock?: number;
+  readonly sku?: string;
+  readonly barcode?: string;
+  readonly image_url?: string;
+  readonly cost?: number;
+  readonly brand?: string;
+  readonly category?: string;
+  readonly variant?: string;
+  readonly weight_quantity?: string;
+  readonly min_stock?: number;
+  readonly description?: string;
+  readonly has_expiry?: boolean;
+  readonly expiry_date?: string;
+  readonly expiry_comments?: string;
 }
 
 /**
@@ -40,6 +66,19 @@ export const createItem = async (
       name:      input.name.trim(),
       price:     input.price,
       stock:     input.type === 'service' ? null : (input.stock ?? 0),
+      sku:              input.sku,
+      barcode:          input.barcode,
+      image_url:        input.image_url,
+      cost:             input.cost,
+      brand:            input.brand,
+      category:        input.category,
+      variant:          input.variant,
+      weight_quantity: input.weight_quantity,
+      min_stock:       input.min_stock ?? 5,
+      description:     input.description,
+      has_expiry:      input.has_expiry ?? false,
+      expiry_date:     input.expiry_date,
+      expiry_comments: input.expiry_comments,
     },
     tenantId,
   );

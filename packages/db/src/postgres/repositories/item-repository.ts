@@ -62,7 +62,7 @@ export class SupabaseItemRepository implements IItemRepositoryPort {
 
   async update(
     id: string,
-    patch: Partial<Pick<Item, 'name' | 'price' | 'stock'>>,
+    patch: Partial<Omit<Item, 'id' | 'tenant_id' | 'type' | 'created_at' | 'updated_at' | 'deleted_at'>>,
     tenantId: string,
   ): Promise<void> {
     const { error } = await this.client

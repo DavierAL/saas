@@ -60,13 +60,9 @@ export default function AnalyticsPage() {
     });
 
     setLoading(true);
-    // eslint-disable-next-line no-console
-    console.log("Fetching analytics for tenant:", tenantId);
     useCases.orders
       .getAnalytics(tenantId)
       .then((res) => {
-        // eslint-disable-next-line no-console
-        console.log("Analytics result:", res);
         setData(res);
         setLoading(false);
       })
