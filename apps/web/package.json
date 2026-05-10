@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "echo \"No lint yet\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

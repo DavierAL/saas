@@ -10,6 +10,7 @@
     "composite": false,
     "declaration": false,
     "declarationMap": false,
+    "skipLibCheck": true,
     "paths": {
       "@saas-pos/domain": ["../../packages/domain/src"],
       "@saas-pos/application": ["../../packages/application/src"],

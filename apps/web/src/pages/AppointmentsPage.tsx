@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTenantId } from "../hooks/useTenantId";
 import { supabase } from "../lib/supabase";
-import type { Item } from "@saas-pos/domain";
 
 interface Appointment {
   id: string;

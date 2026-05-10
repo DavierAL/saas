@@ -1,66 +1,76 @@
-import type { Order, Item, Tenant, User, OrderLine } from '@saas-pos/domain';
+import type { Order, OrderStatus, PaymentMethod } from '@saas-pos/domain';
+import type { Item, ItemType } from '@saas-pos/domain';
+import type { Tenant, IndustryType, ModulesConfig } from '@saas-pos/domain';
+import type { User, UserRole } from '@saas-pos/domain';
+import type { OrderLine } from '@saas-pos/domain';
+
+const generateId = () => 'id-' + Math.random().toString(36).substr(2, 9);
+const now = () => new Date().toISOString();
 
 export const orderBuilder = (overrides: Partial<Order> = {}): Order => ({
-  id: 'order-' + Math.random().toString(36).substr(2, 9),
+  id: generateId(),
   tenant_id: 'tenant-1',
-  customer_id: null,
-  status: 'pending',
+  user_id: 'user-1',
+  customer_name: null,
+  status: 'pending' as OrderStatus,
   total_amount: 1000,
   currency: 'PEN',
-  payment_method: 'cash',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  payment_method: 'cash' as PaymentMethod | null,
+  created_at: now(),
+  updated_at: now(),
+  deleted_at: null,
   ...overrides
 });
 
 export const itemBuilder = (overrides: Partial<Item> = {}): Item => ({
-  id: 'item-' + Math.random().toString(36).substr(2, 9),
+  id: generateId(),
   tenant_id: 'tenant-1',
+  type: 'product' as ItemType,
   name: 'Test Item',
-  description: null,
   price: 1000,
-  cost: 500,
-  current_stock: 100,
-  low_stock_threshold: 10,
-  category: 'food',
-  image_url: null,
-  is_available: true,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  stock: 100,
+  created_at: now(),
+  updated_at: now(),
+  deleted_at: null,
   ...overrides
 });
 
 export const tenantBuilder = (overrides: Partial<Tenant> = {}): Tenant => ({
-  id: 'tenant-' + Math.random().toString(36).substr(2, 9),
+  id: generateId(),
   name: 'Test Tenant',
-  slug: 'test-tenant',
-  status: 'active',
-  plan: 'free',
-  settings: {},
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  industry_type: 'restaurant' as IndustryType,
+  modules_config: {
+    has_inventory: true,
+    has_tables: true,
+    has_appointments: false
+  } as ModulesConfig,
+  valid_until: '2027-12-31T23:59:59Z',
+  currency: 'PEN',
+  created_at: now(),
+  updated_at: now(),
+  deleted_at: null,
   ...overrides
 });
 
 export const userBuilder = (overrides: Partial<User> = {}): User => ({
-  id: 'user-' + Math.random().toString(36).substr(2, 9),
+  id: generateId(),
   tenant_id: 'tenant-1',
   email: 'test@example.com',
-  role: 'cashier',
-  is_active: true,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  role: 'cashier' as UserRole,
+  created_at: now(),
+  updated_at: now(),
+  deleted_at: null,
   ...overrides
 });
 
 export const orderLineBuilder = (overrides: Partial<OrderLine> = {}): OrderLine => ({
-  id: 'line-' + Math.random().toString(36).substr(2, 9),
+  id: generateId(),
   order_id: 'order-1',
   item_id: 'item-1',
   quantity: 1,
   unit_price: 1000,
   subtotal: 1000,
-  created_at: new Date().toISOString(),
+  tenant_id: 'tenant-1',
   ...overrides
 });
 

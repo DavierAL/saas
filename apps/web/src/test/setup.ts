@@ -97,15 +97,19 @@ global.localStorage = {
   getItem: vi.fn().mockReturnValue(null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
-} as Storage;
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn()
+} as unknown as Storage;
 
 global.sessionStorage = {
   getItem: vi.fn().mockReturnValue(null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-  clear: vi.fn()
-} as Storage;
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn()
+} as unknown as Storage;
 
 Object.defineProperty(window, 'location', {
   value: {
