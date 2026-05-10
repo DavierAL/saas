@@ -25,7 +25,7 @@ function CartItemRow({ item_id, name, unit_price, quantity }: {
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'OK', 
-          onPress: (val) => {
+          onPress: (val?: string) => {
             const num = parseInt(val || '0', 10);
             if (!isNaN(num)) updateQuantity(item_id, num);
           }

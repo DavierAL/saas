@@ -17,7 +17,7 @@ import { useAuth } from '../src/providers/AppProvider';
 export default function PaywallScreen() {
   const { tenantId, signOut } = useAuth();
   const router = useRouter();
-  const tenant = useTenant(tenantId ?? '');
+  const { tenant } = useTenant(tenantId ?? '');
   const [isVerifying, setIsVerifying] = useState(false);
   
   const status = tenant ? getSubscriptionStatus(tenant) : null;

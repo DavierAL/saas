@@ -9,6 +9,7 @@ export * from './use-cases/checkout';
 export * from './use-cases/manage-catalog';
 export * from './use-cases/manage-users';
 export * from './use-cases/update-order-status';
+export * from './use-cases/generate-cash-closing';
 
 // Ports (interfaces for repositories)
 export * from './ports/item-repository.port';

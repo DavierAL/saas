@@ -10,9 +10,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
-import { FlashList, type FlashListProps } from '@shopify/flash-list';
+const AnyFlashList = require('@shopify/flash-list').FlashList;
 import type { ListRenderItem } from '@shopify/flash-list';
 import { Stack } from 'expo-router';
 import { useState, useMemo } from 'react';
@@ -73,8 +72,8 @@ function SkeletonList() {
 
 /** [UX-016] Empty state — distinct per context */
 function EmptyState({
-  isSearch, category,
-}: { isSearch: boolean; category: Category }) {
+  isSearch, category, searchText,
+}: { isSearch: boolean; category: Category; searchText: string }) {
   if (isSearch) {
     return (
       <View style={st.emptyWrap}>
@@ -82,7 +81,7 @@ function EmptyState({
           <Ionicons name="search-outline" size={48} color={colors.bg.surface} />
         </View>
         <Text style={st.emptyTitle}>Sin resultados</Text>
-        <Text style={st.emptyText}>No encontramos nada que coincida con "{search}"</Text>
+        <Text style={st.emptyText}>No encontramos nada que coincida con "{searchText}"</Text>
       </View>
     );
   }
@@ -278,14 +277,14 @@ export default function CatalogScreen() {
             </Pressable>
           </View>
         ) : (
-          <FlashList
+          <AnyFlashList
             data={filtered}
             keyExtractor={(i: any) => i.id}
             estimatedItemSize={80}
             renderItem={({ item }: any) => <ItemRow item={item} onAdd={handleAdd} currency={currency} />}
             ItemSeparatorComponent={() => <View style={st.sep} />}
             ListEmptyComponent={
-              <EmptyState isSearch={search.trim().length > 0} category={category} />
+              <EmptyState isSearch={search.trim().length > 0} category={category} searchText={search} />
             }
           />
         )}

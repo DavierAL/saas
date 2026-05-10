@@ -14,15 +14,12 @@ import type { CartItem, CartState } from '@saas-pos/application';
 import type { PaymentMethod } from '@saas-pos/domain';
 
 interface CartStore extends CartState {
-  // Actions
   addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeItem: (item_id: string) => void;
   updateQuantity: (item_id: string, quantity: number) => void;
   clearCart: () => void;
   setCustomerName: (name: string) => void;
-  setPaymentMethod: (method: PaymentMethod | null) => void;
-
-  // Derived (computed inline)
+  setPaymentMethod: (method: PaymentMethod | null | undefined) => void;
   total: () => number;
   itemCount: () => number;
 }

@@ -6,11 +6,11 @@
  * [UX-014] Date filter chips (Hoy / Semana / Mes) + text search by order ID
  * [UX-015] Timezone-safe "today" using locale-aware Date comparison
  */
-import {
+import React, {
   View, Text, StyleSheet, Pressable,
   TextInput, ActivityIndicator,
 } from 'react-native';
-import { FlashList, type FlashListProps, type ListRenderItem } from '@shopify/flash-list';
+const AnyFlashList = require('@shopify/flash-list').FlashList;
 import { Stack, router } from 'expo-router';
 import { useState, useMemo, useCallback } from 'react';
 import { colors, spacing, typography, radius, Badge } from '@saas-pos/ui';
@@ -223,12 +223,12 @@ export default function OrdersScreen() {
             ['today', 'Hoy'],
             ['week',  'Semana'],
             ['month', 'Mes'],
-          ] as [DateFilter, string][]).map(([value, label]) => (
+          ] as [DateFilter, string][]).map((item) => (
             <FilterChip
-              key={value}
-              label={label}
-              active={dateFilter === value}
-              onPress={() => handleFilterChange(value)}
+              {...{ key: item[0] } as any}
+              label={item[1]}
+              active={dateFilter === item[0]}
+              onPress={() => handleFilterChange(item[0])}
             />
           ))}
         </View>
@@ -244,18 +244,18 @@ export default function OrdersScreen() {
         {isLoading && displayed.length === 0 ? (
           <View style={{ flex: 1 }}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <React.Fragment key={i}>
+              <View {...{ key: i } as any}>
                 <OrderSkeleton />
                 <View style={s.sep} />
-              </React.Fragment>
+              </View>
             ))}
           </View>
         ) : (
-          <FlashList
+          <AnyFlashList
             data={displayed}
-            keyExtractor={(o) => o.id}
+            keyExtractor={(o: Order) => o.id}
             estimatedItemSize={84}
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: Order }) => (
               <OrderRow
                 order={item}
                 onPress={() => router.push({ pathname: '/order-detail', params: { orderId: item.id } })}

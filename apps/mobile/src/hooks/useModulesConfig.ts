@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: ModulesConfig = {
 };
 
 export const useModulesConfig = (): ModulesConfig => {
-  const tenant = useTenant('');
+  const { tenant } = useTenant('');
   
   const config = useMemo(() => {
     if (!tenant?.modules_config) {

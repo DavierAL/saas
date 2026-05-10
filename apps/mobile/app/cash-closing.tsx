@@ -10,9 +10,11 @@ import { formatMoney, createMoney } from '@saas-pos/domain';
 import { generateCashClosing } from '@saas-pos/application';
 import type { Order } from '@saas-pos/domain';
 import { useOrders } from '../src/hooks/useOrders';
+import { useAuth } from '../src/providers/AppProvider';
 
 export default function CashClosingScreen() {
-  const { orders } = useOrders();
+  const { tenantId } = useAuth();
+  const { orders } = useOrders(tenantId ?? '', 100);
   const today = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());

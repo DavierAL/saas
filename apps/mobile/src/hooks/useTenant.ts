@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getDatabase } from '../lib/powersync/database';
+import type { Tenant as DomainTenant } from '@saas-pos/domain';
 
-export interface Tenant {
-  id: string;
-  name: string;
-  currency: string;
-  industry_type: string;
-}
+export type Tenant = DomainTenant;
 
 export function useTenant(tenantId: string | null) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -39,7 +35,7 @@ export function useTenant(tenantId: string | null) {
     // Watch for live changes (fires when PowerSync syncs the tenant row)
     const unsubscribe = db.watch('SELECT * FROM tenants WHERE id = ?', [tenantId], {
       onResult: (result) => {
-        const row = result.rows?.[0] ?? null;
+        const row = result.rows && result.rows.length > 0 ? result.rows.item(0) as Tenant : null;
         setTenant(row);
         setIsLoading(false);
         if (row) {

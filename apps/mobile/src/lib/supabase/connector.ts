@@ -10,6 +10,7 @@
 import {
   AbstractPowerSyncDatabase,
   PowerSyncBackendConnector,
+  PowerSyncCredentials,
   CrudEntry,
   UpdateType,
 } from '@powersync/react-native';

@@ -8,7 +8,7 @@ export interface CashClosingSummary {
   totalOrders: number;
   averageTicket: number;
   byPaymentMethod: Record<string, number>;
-  byItemType: Record<string, number>;
+  byItemType: { product: number; service: number };
 }
 
 export const generateCashClosing = (
@@ -35,7 +35,7 @@ export const generateCashClosing = (
   });
 
   // By item type (requires order_lines - simplified here)
-  const byItemType: Record<string, number> = {
+  const byItemType = {
     product: totalSales, // Would need to join with order_lines to know actual split
     service: 0,
   };

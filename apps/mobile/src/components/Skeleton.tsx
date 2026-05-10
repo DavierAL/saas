@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import { View, Animated, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
 import { colors } from '@saas-pos/ui';
 
 interface SkeletonProps {
-  width?: number | string;
-  height?: number | string;
+  width?: DimensionValue;
+  height?: DimensionValue;
   style?: ViewStyle;
   borderRadius?: number;
 }
@@ -34,8 +34,8 @@ export function Skeleton({ width, height, style, borderRadius = 4 }: SkeletonPro
       style={[
         s.skeleton,
         {
-          width,
-          height,
+          width: width ?? '100%',
+          height: height ?? 20,
           borderRadius,
           opacity,
         },

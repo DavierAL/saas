@@ -8,7 +8,7 @@ import { useTenant } from '../hooks/useTenant';
 
 export function SubscriptionBanner() {
   const { tenantId } = useAuth();
-  const tenant = useTenant(tenantId ?? '');
+  const { tenant } = useTenant(tenantId ?? '');
   const router = useRouter();
 
   if (!tenant) return null;

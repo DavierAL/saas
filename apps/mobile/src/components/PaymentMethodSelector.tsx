@@ -10,8 +10,8 @@ import { colors, spacing, typography, radius } from '@saas-pos/ui';
 import type { PaymentMethod } from '@saas-pos/domain';
 
 interface PaymentMethodSelectorProps {
-  value: PaymentMethod | null;
-  onChange: (method: PaymentMethod) => void;
+  value: PaymentMethod | null | undefined;
+  onChange: (method: PaymentMethod | null | undefined) => void;
 }
 
 const PAYMENT_OPTIONS: { method: PaymentMethod; label: string; icon: string }[] = [
