@@ -1,7 +1,6 @@
 /**
  * Table Repository Port — Contract for table operations.
  */
-import type { Tenant } from '@saas-pos/domain';
 
 export type TableStatus = 'free' | 'occupied' | 'billing';
 

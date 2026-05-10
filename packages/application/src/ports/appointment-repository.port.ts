@@ -1,7 +1,6 @@
 /**
  * Appointment Repository Port — Contract for appointment operations.
  */
-import type { Tenant } from '@saas-pos/domain';
 
 export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
 

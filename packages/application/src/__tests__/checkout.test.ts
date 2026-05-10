@@ -86,7 +86,8 @@ describe('checkout use case', () => {
   });
 
   test('fails when subscription is expired [TEST-007]', async () => {
-    tenantRepo.isSubscriptionActive.mockResolvedValue(false);
+    const expiredTenant = tenantBuilder().expired().build();
+    tenantRepo.findById.mockResolvedValue(expiredTenant);
 
     const promise = checkout(
       {

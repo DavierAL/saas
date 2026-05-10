@@ -7,9 +7,10 @@ describe('SqliteItemRepository', () => {
 
   beforeEach(() => {
     db = {
-      getAll:  jest.fn(),
-      get:     jest.fn(),
-      execute: jest.fn(),
+      getAll:      jest.fn(),
+      get:         jest.fn(),
+      getOptional: jest.fn(),
+      execute:     jest.fn(),
     } as any;
     repo = new SqliteItemRepository(db);
   });
@@ -61,10 +62,10 @@ describe('SqliteItemRepository', () => {
   });
 
   test('findById: formats query correctly', async () => {
-    db.get.mockResolvedValue(null);
+    db.getOptional.mockResolvedValue(null);
     await repo.findById('item-1', 'tenant-1');
 
-    expect(db.get).toHaveBeenCalledWith(
+    expect(db.getOptional).toHaveBeenCalledWith(
       expect.stringMatching(/SELECT.*FROM items WHERE id = \?/is),
       ['item-1', 'tenant-1']
     );

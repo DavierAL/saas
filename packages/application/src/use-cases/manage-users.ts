@@ -31,11 +31,12 @@ export const createUser = async (
   repo: IUserRepositoryPort,
   deps: { hashPassword: (password: string) => Promise<string> },
 ): Promise<User> => {
-  if (input.email.trim().length === 0) {
+  const trimmedEmail = input.email.trim();
+  if (trimmedEmail.length === 0) {
     throw new Error("El email no puede estar vacío.");
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(input.email)) {
+  if (!emailRegex.test(trimmedEmail)) {
     throw new Error("El email no tiene un formato válido.");
   }
   if (input.password.length < 6) {
@@ -46,14 +47,14 @@ export const createUser = async (
     throw new Error("Rol inválido. Debe ser admin, cashier o waiter.");
   }
 
-  const existing = await repo.findByEmail(input.email, tenantId);
+  const existing = await repo.findByEmail(trimmedEmail, tenantId);
   if (existing) {
     throw new Error("Ya existe un usuario con este email.");
   }
 
   const passwordHash = await deps.hashPassword(input.password);
   return repo.insert({
-    email: input.email.trim().toLowerCase(),
+    email: trimmedEmail.toLowerCase(),
     passwordHash,
     role: input.role,
     tenantId,
