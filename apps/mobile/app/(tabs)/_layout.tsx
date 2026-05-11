@@ -6,6 +6,7 @@ import { colors, spacing, typography, radius } from '@saas-pos/ui';
 import { useCartStore } from '../../src/store/cart.store';
 import { SubscriptionBanner } from '../../src/components/SubscriptionBanner';
 import { OfflineBanner } from '../../src/components/OfflineBanner';
+import { useAuth } from '../../src/providers/AppProvider';
 import { useModulesConfig } from '../../src/hooks/useModulesConfig';
 
 function TabIcon({ name, color, badge }: { name: any; color: string; badge?: number }) {
@@ -24,7 +25,8 @@ function TabIcon({ name, color, badge }: { name: any; color: string; badge?: num
 export default function TabsLayout() {
   const itemCount = useCartStore((s) => s.itemCount());
   const insets = useSafeAreaInsets();
-  const modules = useModulesConfig();
+  const { tenantId } = useAuth();
+  const modules = useModulesConfig(tenantId);
 
   return (
     <View style={{ flex: 1 }}>

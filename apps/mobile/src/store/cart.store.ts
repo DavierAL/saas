@@ -14,6 +14,7 @@ import type { CartItem, CartState } from '@saas-pos/application';
 import type { PaymentMethod } from '@saas-pos/domain';
 
 interface CartStore extends CartState {
+  currency: string;
   addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeItem: (item_id: string) => void;
   updateQuantity: (item_id: string, quantity: number) => void;
@@ -22,6 +23,7 @@ interface CartStore extends CartState {
   setCustomerName: (name: string) => void;
   setPaymentMethod: (method: PaymentMethod | null | undefined) => void;
   setTipAmount: (amount: number) => void;
+  setCurrency: (currency: string) => void;
   total: () => number;
   itemCount: () => number;
 }
@@ -32,6 +34,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
   customerName: '',
   paymentMethod: null,
   tipAmount: 0,
+  currency: 'PEN',
 
   addItem: (item, quantity = 1) =>
     set((state) => ({ ...state, items: addItemToCart(state, item, quantity).items })),
@@ -62,7 +65,9 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
   setTipAmount: (amount) => set({ tipAmount: amount }),
 
-  total: () => getCartTotal(get(), 'PEN') + (get().tipAmount ?? 0),
+  setCurrency: (currency) => set({ currency }),
+
+  total: () => getCartTotal(get(), get().currency) + (get().tipAmount ?? 0),
 
   itemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
 }));

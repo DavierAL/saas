@@ -1,21 +1,11 @@
 // @ts-nocheck - TypeScript compatibility issue with react-router-dom v6 NavLink
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink as RouterNavLink, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { CatalogPage } from './pages/CatalogPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { TenantsPage } from './pages/TenantsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import InventoryPage from './pages/InventoryPage';
-import UsersPage from './pages/UsersPage';
-import SubscriptionPage from './pages/SubscriptionPage';
-import CashClosingPage from './pages/CashClosingPage';
-import StockAlertsPage from './pages/StockAlertsPage';
-import PaymentMethodsPage from './pages/PaymentMethodsPage';
-import TablesPage from './pages/TablesPage';
-import AppointmentsPage from './pages/AppointmentsPage';
-import { CustomersPage } from './pages/CustomersPage';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { AuthGuard } from './components/AuthGuard';
 import { LoginPage } from './pages/LoginPage';
@@ -23,6 +13,17 @@ import { RegisterPage } from './pages/RegisterPage';
 import { useTenantId } from './hooks/useTenantId';
 import { useTenant } from './hooks/useTenant';
 import { useCases } from './lib/use-cases';
+
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const UsersPage = lazy(() => import('./pages/UsersPage'));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
+const CashClosingPage = lazy(() => import('./pages/CashClosingPage'));
+const StockAlertsPage = lazy(() => import('./pages/StockAlertsPage'));
+const PaymentMethodsPage = lazy(() => import('./pages/PaymentMethodsPage'));
+const TablesPage = lazy(() => import('./pages/TablesPage'));
+const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'));
+const CustomersPage = lazy(() => import('./pages/CustomersPage'));
 
 type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'users' | 'subscription' | 'cash-closing' | 'stock-alerts' | 'payment-methods' | 'tables' | 'appointments' | 'customers' | 'settings';
 
@@ -235,6 +236,7 @@ export function App() {
                 )}
               </header>
               <main className="page-wrapper">
+                <Suspense fallback={<div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando...</div>}>
                 <Routes>
                   <Route path="/" element={<OverviewPage />} />
                   <Route path="/catalog" element={<CatalogPage />} />
@@ -255,7 +257,7 @@ export function App() {
                       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
                         <strong style={{ color: 'var(--text-primary)' }}>Ajustes</strong> — En construcción
                       </p>
-                      <button 
+                      <button
                         onClick={toggleTheme}
                         style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)', border: '1px solid var(--accent-border)', padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                       >
@@ -265,6 +267,7 @@ export function App() {
                   } />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                </Suspense>
               </main>
             </div>
           </div>

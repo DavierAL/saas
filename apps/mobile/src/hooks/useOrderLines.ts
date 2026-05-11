@@ -8,22 +8,31 @@
 import { usePowerSyncQuery } from '@powersync/react-native';
 import type { OrderLine } from '@saas-pos/domain';
 
+interface RawOrderLine {
+  id: string;
+  order_id: string;
+  item_id: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  tenant_id: string;
+}
+
 export const useOrderLines = (orderId: string, tenantId: string): OrderLine[] => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows: any[] = usePowerSyncQuery(
+  const rows = usePowerSyncQuery<RawOrderLine>(
     `SELECT id, order_id, item_id, quantity, unit_price, subtotal, tenant_id
      FROM order_lines
      WHERE order_id = ? AND tenant_id = ?`,
     [orderId, tenantId],
-  ) as unknown as any[];
+  );
 
   return (rows ?? []).map((row) => ({
-    id:         row.id as string,
-    order_id:   row.order_id as string,
-    item_id:    row.item_id as string,
-    quantity:   row.quantity as number,
-    unit_price: row.unit_price as number,
-    subtotal:   row.subtotal as number,
-    tenant_id:  row.tenant_id as string,
+    id:         row.id,
+    order_id:   row.order_id,
+    item_id:    row.item_id,
+    quantity:   row.quantity,
+    unit_price: row.unit_price,
+    subtotal:   row.subtotal,
+    tenant_id:  row.tenant_id,
   }));
 };

@@ -10,12 +10,14 @@ import { formatMoney, createMoney } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { PaymentMethodSelector } from '../../src/components/PaymentMethodSelector';
 import type { PaymentMethod } from '@saas-pos/domain';
+import { useAuth } from '../../src/providers/AppProvider';
+import { useTenant } from '../../src/hooks/useTenant';
 
-function CartItemRow({ item_id, name, unit_price, quantity }: {
-  item_id: string; name: string; unit_price: number; quantity: number;
+function CartItemRow({ item_id, name, unit_price, quantity, currency }: {
+  item_id: string; name: string; unit_price: number; quantity: number; currency: string;
 }) {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const subtotal = createMoney(unit_price * quantity, 'PEN');
+  const subtotal = createMoney(unit_price * quantity, currency);
 
   const handleManualQuantity = () => {
     Alert.prompt(
@@ -41,7 +43,7 @@ function CartItemRow({ item_id, name, unit_price, quantity }: {
     <View style={s.cartRow}>
       <View style={s.cartInfo}>
         <Text style={s.cartName} numberOfLines={1}>{name}</Text>
-        <Text style={s.cartUnitPrice}>{formatMoney(createMoney(unit_price, 'PEN'))} c/u</Text>
+        <Text style={s.cartUnitPrice}>{formatMoney(createMoney(unit_price, currency))} c/u</Text>
       </View>
       <View style={s.cartQty}>
         <Pressable 
@@ -68,7 +70,12 @@ function CartItemRow({ item_id, name, unit_price, quantity }: {
 }
 
 export default function CartScreen() {
+  const { tenantId } = useAuth();
+  const { tenant } = useTenant(tenantId);
+  const setCurrency = useCartStore((s) => s.setCurrency);
+
   const items = useCartStore((st) => st.items);
+  const currency = tenant?.currency || 'PEN';
   const total = useCartStore((st) => st.total());
   const clearCart = useCartStore((st) => st.clearCart);
   const customerName = useCartStore((st) => st.customerName);
@@ -100,11 +107,11 @@ export default function CartScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ 
-        title: 'Carrito', 
+      <Stack.Screen options={{
+        title: 'Carrito',
         headerShown: true,
-        headerStyle: { backgroundColor: colors.bg.base }, 
-        headerTintColor: colors.text.primary 
+        headerStyle: { backgroundColor: colors.bg.base },
+        headerTintColor: colors.text.primary
       }} />
       <View style={s.container}>
         {items.length === 0 ? (
@@ -114,9 +121,9 @@ export default function CartScreen() {
             </View>
             <Text style={s.emptyTitle}>Carrito vacío</Text>
             <Text style={s.emptyDesc}>Agrega productos o servicios desde el catálogo para comenzar un nuevo cobro.</Text>
-            <Button 
-              label="Ir al catálogo" 
-              variant="outline" 
+            <Button
+              label="Ir al catálogo"
+              variant="outline"
               onPress={() => router.replace('/(tabs)')}
               style={{ marginTop: spacing[6] }}
             />
@@ -125,7 +132,7 @@ export default function CartScreen() {
           <>
             <ScrollView style={s.list}>
               {items.map((item) => (
-                <CartItemRow key={item.item_id} {...item} />
+                <CartItemRow key={item.item_id} {...item} currency={currency} />
               ))}
             </ScrollView>
 
@@ -137,9 +144,9 @@ export default function CartScreen() {
               )}
               <View style={s.totalRow}>
                 <Text style={s.totalLabel}>Total</Text>
-                <Text style={s.totalValue}>{formatMoney(createMoney(total, 'PEN'))}</Text>
+                <Text style={s.totalValue}>{formatMoney(createMoney(total, currency))}</Text>
               </View>
-              
+
               <View style={s.customerSection}>
                 <Text style={s.customerLabel}>Cliente (opcional)</Text>
                 <TextInput
@@ -157,7 +164,7 @@ export default function CartScreen() {
               />
 
               <Button
-                label={`Cobrar · ${formatMoney(createMoney(total, 'PEN'))}`}
+                label={`Cobrar · ${formatMoney(createMoney(total, currency))}`}
                 onPress={handleCheckout}
                 loading={state === 'processing'}
                 variant="primary"

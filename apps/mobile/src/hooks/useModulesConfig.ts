@@ -18,8 +18,8 @@ const DEFAULT_CONFIG: ModulesConfig = {
   has_appointments: false,
 };
 
-export const useModulesConfig = (): ModulesConfig => {
-  const { tenant } = useTenant('');
+export const useModulesConfig = (tenantId: string | null): ModulesConfig => {
+  const { tenant } = useTenant(tenantId);
   
   const config = useMemo(() => {
     if (!tenant?.modules_config) {
@@ -41,7 +41,7 @@ export const useModulesConfig = (): ModulesConfig => {
       console.warn('[useModulesConfig] Failed to parse modules_config:', tenant.modules_config);
       return DEFAULT_CONFIG;
     }
-  }, [tenant?.modules_config]);
+  }, [tenant]);
   
   return config;
 };

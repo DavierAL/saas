@@ -1,26 +1,17 @@
 /**
  * Tables Screen — Restaurant table management.
- * 
+ *
  * Shows grid of tables with status colors.
  * Route: /(tabs)/tables
  */
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { usePowerSyncQuery } from '@powersync/react-native';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useModulesConfig } from '../../src/hooks/useModulesConfig';
-
-// Mock data - in production would use use case
-const MOCK_TABLES = [
-  { id: '1', table_number: 1, status: 'free' },
-  { id: '2', table_number: 2, status: 'occupied' },
-  { id: '3', table_number: 3, status: 'free' },
-  { id: '4', table_number: 4, status: 'billing' },
-  { id: '5', table_number: 5, status: 'free' },
-  { id: '6', table_number: 6, status: 'free' },
-];
 
 const STATUS_COLORS = {
   free: colors.status.success,
@@ -34,9 +25,22 @@ const STATUS_LABELS = {
   billing: 'Cuenta',
 };
 
+const TABLE_STATUSES = ['free', 'occupied', 'billing'] as const;
+type TableStatus = typeof TABLE_STATUSES[number];
+
+interface TableRow {
+  id: string;
+  table_number: number;
+  status: TableStatus;
+}
+
 export default function TablesScreen() {
   const { tenantId } = useAuth();
-  const modules = useModulesConfig();
+  const modules = useModulesConfig(tenantId);
+  const tables = usePowerSyncQuery<TableRow>(
+    `SELECT id, table_number, status FROM tables_restaurant WHERE tenant_id = ?`,
+    [tenantId ?? ''],
+  ) as TableRow[];
   
   if (!modules.has_tables) {
     return (
@@ -60,15 +64,15 @@ export default function TablesScreen() {
         <Text style={s.header}>Selecciona una mesa</Text>
         
         <View style={s.grid}>
-          {MOCK_TABLES.map((table) => (
+          {(tables ?? []).map((table) => (
             <Pressable
               key={table.id}
-              style={[s.tableCard, { borderColor: STATUS_COLORS[table.status as keyof typeof STATUS_COLORS] }]}
+              style={[s.tableCard, { borderColor: STATUS_COLORS[table.status] }]}
             >
               <Text style={s.tableNumber}>{table.table_number}</Text>
-              <View style={[s.statusBadge, { backgroundColor: STATUS_COLORS[table.status as keyof typeof STATUS_COLORS] + '20' }]}>
-                <Text style={[s.statusText, { color: STATUS_COLORS[table.status as keyof typeof STATUS_COLORS] }]}>
-                  {STATUS_LABELS[table.status as keyof typeof STATUS_LABELS]}
+              <View style={[s.statusBadge, { backgroundColor: STATUS_COLORS[table.status] + '20' }]}>
+                <Text style={[s.statusText, { color: STATUS_COLORS[table.status] }]}>
+                  {STATUS_LABELS[table.status]}
                 </Text>
               </View>
             </Pressable>

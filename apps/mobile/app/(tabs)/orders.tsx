@@ -16,6 +16,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { colors, spacing, typography, radius, Badge } from '@saas-pos/ui';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useOrders } from '../../src/hooks/useOrders';
+import { useTenant } from '../../src/hooks/useTenant';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import type { Order } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,7 +118,9 @@ const PAGE_SIZE = 20;
 
 export default function OrdersScreen() {
   const { tenantId } = useAuth();
+  const { tenant } = useTenant(tenantId);
   const { orders: allOrders, loadMore, hasMore, isLoading } = useOrders(tenantId ?? '', PAGE_SIZE);
+  const currency = tenant?.currency || 'PEN';
 
   const [search,     setSearch]     = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
@@ -192,7 +195,7 @@ export default function OrdersScreen() {
           </View>
           <View style={s.todayDivider} />
           <View style={s.todayStat}>
-            <Text style={[s.todayValue, { color: colors.status.success }]}>{formatMoney(createMoney(todayTotal, 'PEN'))}</Text>
+            <Text style={[s.todayValue, { color: colors.status.success }]}>{formatMoney(createMoney(todayTotal, currency))}</Text>
             <Text style={s.todayLabel}>Total hoy</Text>
           </View>
         </View>

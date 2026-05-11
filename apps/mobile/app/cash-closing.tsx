@@ -11,9 +11,11 @@ import { generateCashClosing } from '@saas-pos/application';
 import type { Order } from '@saas-pos/domain';
 import { useOrders } from '../src/hooks/useOrders';
 import { useAuth } from '../src/providers/AppProvider';
+import { useTenant } from '../src/hooks/useTenant';
 
 export default function CashClosingScreen() {
   const { tenantId } = useAuth();
+  const { tenant } = useTenant(tenantId);
   const { orders } = useOrders(tenantId ?? '', 100);
   const today = useMemo(() => {
     const now = new Date();
@@ -22,7 +24,9 @@ export default function CashClosingScreen() {
     return { start, end };
   }, []);
 
-  const summary = useMemo(() => 
+  const currency = tenant?.currency || 'PEN';
+
+  const summary = useMemo(() =>
     generateCashClosing(orders as Order[], today.start, today.end),
     [orders, today]
   );
@@ -39,21 +43,21 @@ export default function CashClosingScreen() {
 
   return (
     <>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Cierre de Caja',
           headerStyle: { backgroundColor: colors.bg.base },
           headerTintColor: colors.text.primary,
-        }} 
+        }}
       />
       <ScrollView style={s.container}>
         <View style={s.header}>
           <Text style={s.dateTitle}>Cierre del día</Text>
           <Text style={s.dateSubtitle}>
-            {today.start.toLocaleDateString('es-PE', { 
-              weekday: 'long', 
-              day: 'numeric', 
-              month: 'long' 
+            {today.start.toLocaleDateString('es-PE', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long'
             })}
           </Text>
         </View>
@@ -63,19 +67,19 @@ export default function CashClosingScreen() {
           <View style={s.statRow}>
             <Text style={s.statLabel}>Total vendido</Text>
             <Text style={s.statValueLarge}>
-              {formatMoney(createMoney(summary.totalSales, 'PEN'))}
+              {formatMoney(createMoney(summary.totalSales, currency))}
             </Text>
           </View>
-          
+
           <View style={s.statDivider} />
-          
+
           <View style={s.statRowInline}>
             <View style={s.statBlock}>
               <Text style={s.statValue}>{summary.totalOrders}</Text>
               <Text style={s.statLabelSmall}>Órdenes</Text>
             </View>
             <View style={s.statBlock}>
-              <Text style={s.statValue}>{formatMoney(createMoney(summary.averageTicket, 'PEN'))}</Text>
+              <Text style={s.statValue}>{formatMoney(createMoney(summary.averageTicket, currency))}</Text>
               <Text style={s.statLabelSmall}>Ticket prom.</Text>
             </View>
           </View>
@@ -87,7 +91,7 @@ export default function CashClosingScreen() {
           {Object.entries(summary.byPaymentMethod).map(([method, amount]) => (
             <View key={method} style={s.row}>
               <Text style={s.rowLabel}>{formatPaymentMethod(method)}</Text>
-              <Text style={s.rowValue}>{formatMoney(createMoney(amount, 'PEN'))}</Text>
+              <Text style={s.rowValue}>{formatMoney(createMoney(amount, currency))}</Text>
             </View>
           ))}
           {Object.keys(summary.byPaymentMethod).length === 0 && (
@@ -101,13 +105,13 @@ export default function CashClosingScreen() {
           <View style={s.row}>
             <Text style={s.rowLabel}>Productos</Text>
             <Text style={s.rowValue}>
-              {formatMoney(createMoney(summary.byItemType.product, 'PEN'))}
+              {formatMoney(createMoney(summary.byItemType.product, currency))}
             </Text>
           </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>Servicios</Text>
             <Text style={s.rowValue}>
-              {formatMoney(createMoney(summary.byItemType.service, 'PEN'))}
+              {formatMoney(createMoney(summary.byItemType.service, currency))}
             </Text>
           </View>
         </View>

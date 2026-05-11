@@ -1,6 +1,6 @@
 /**
  * Appointments Screen — Barbería appointment calendar.
- * 
+ *
  * Shows weekly calendar with appointments.
  * Route: /(tabs)/appointments
  */
@@ -8,20 +8,41 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { usePowerSyncQuery } from '@powersync/react-native';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
+import { useAuth } from '../../src/providers/AppProvider';
 import { useModulesConfig } from '../../src/hooks/useModulesConfig';
-
-// Mock data
-const MOCK_APPOINTMENTS = [
-  { id: '1', customer_name: 'Juan Pérez', time: '09:00', status: 'scheduled', service: 'Corte' },
-  { id: '2', customer_name: 'María García', time: '10:00', status: 'scheduled', service: 'Barba' },
-  { id: '3', customer_name: 'Carlos López', time: '11:30', status: 'scheduled', service: 'Corte + Barba' },
-];
 
 const HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
+type AppointmentStatus = 'scheduled' | 'done' | 'cancelled';
+
+interface AppointmentRow {
+  id: string;
+  customer_name: string;
+  start_time: string;
+  status: AppointmentStatus;
+  item_id: string;
+}
+
+const STATUS_LABELS: Record<AppointmentStatus, string> = {
+  scheduled: 'Programada',
+  done: 'Completada',
+  cancelled: 'Cancelada',
+};
+
 export default function AppointmentsScreen() {
-  const modules = useModulesConfig();
+  const { tenantId } = useAuth();
+  const modules = useModulesConfig(tenantId);
+  const [today] = useState(() => new Date());
+
+  const appointments = usePowerSyncQuery<AppointmentRow>(
+    `SELECT a.id, a.customer_name, a.start_time, a.status, a.item_id
+     FROM appointments a
+     WHERE a.tenant_id = ? AND date(a.start_time) = date(?)
+     ORDER BY a.start_time ASC`,
+    [tenantId ?? '', today.toISOString().split('T')[0]!],
+  ) as AppointmentRow[];
   
   if (!modules.has_appointments) {
     return (
@@ -38,7 +59,6 @@ export default function AppointmentsScreen() {
     );
   }
 
-  const today = new Date();
   const weekDays = useMemo(() => {
     const days = [];
     const startOfWeek = new Date(today);
@@ -80,23 +100,26 @@ export default function AppointmentsScreen() {
         
         {/* Appointments List */}
         <View style={s.appointmentsList}>
-          {MOCK_APPOINTMENTS.map((apt) => (
+          {(appointments ?? []).map((apt) => {
+            const timeStr = new Date(apt.start_time).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+            return (
             <Pressable key={apt.id} style={s.appointmentCard}>
               <View style={s.appointmentTime}>
-                <Text style={s.appointmentTimeText}>{apt.time}</Text>
+                <Text style={s.appointmentTimeText}>{timeStr}</Text>
               </View>
               <View style={s.appointmentInfo}>
                 <Text style={s.appointmentCustomer}>{apt.customer_name}</Text>
                 <View style={s.appointmentService}>
                   <Ionicons name="cut-outline" size={12} color={colors.text.muted} />
-                  <Text style={s.appointmentServiceText}>{apt.service}</Text>
+                  <Text style={s.appointmentServiceText}>{apt.item_id}</Text>
                 </View>
               </View>
               <View style={s.appointmentStatus}>
-                <Text style={s.appointmentStatusText}>Programada</Text>
+                <Text style={s.appointmentStatusText}>{STATUS_LABELS[apt.status]}</Text>
               </View>
             </Pressable>
-          ))}
+            );
+          })}
         </View>
         
         {/* Actions */}
