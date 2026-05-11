@@ -25,6 +25,7 @@ import { formatMoney, createMoney } from '@saas-pos/domain';
 import type { Item } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../src/components/Skeleton';
+import { useSession } from '../../src/hooks/useSession';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type Category = 'all' | 'product' | 'service';
@@ -183,6 +184,7 @@ export default function CatalogScreen() {
   const { tenantId, subscriptionWarning } = useAuth();
   const { status, hasSynced } = useSyncStatus();
   const { tenant, isLoading: isTenantLoading } = useTenant(tenantId);
+  const { signOut } = useSession();
 
   const rawItems = useItems(tenantId ?? '');
   const addItem  = useCartStore((s) => s.addItem);
@@ -218,49 +220,51 @@ export default function CatalogScreen() {
   const serviceCount = rawItems.filter((i) => i.type === 'service').length;
 
   return (
-    <>
-      <Stack.Screen options={{ 
-        title: 'Catálogo', 
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <ScanButton />
-            <SyncBadge />
-          </View>
-        ), 
-      }} />
-      <View style={[st.container, { paddingTop: Math.max(insets.top + spacing[6], spacing[10]) }]}>
-        {/* Subscription Warning Banner */}
-        {subscriptionWarning && (
-          <View style={st.warningBanner}>
-            <Ionicons name="warning-outline" size={18} color="#F59E0B" />
-            <Text style={st.warningText}>{subscriptionWarning}</Text>
-          </View>
-        )}
-
-        {/* Search Bar */}
-        <View style={st.searchBar}>
-          <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-          <TextInput
-            style={st.searchInput}
-            placeholder="Buscar productos o servicios..."
-            placeholderTextColor="#9CA3AF"
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <Pressable hitSlop={12} onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-            </Pressable>
-          )}
+    <View style={[st.container, { paddingTop: Math.max(insets.top + spacing[2], spacing[4]) }]}>
+      {/* Custom Header */}
+      <View style={st.header}>
+        <Text style={st.headerTitle}>Catálogo</Text>
+        <View style={st.headerRight}>
+          <ScanButton />
+          <SyncBadge />
+          <Pressable onPress={() => signOut()} style={st.logoutBtn}>
+            <Ionicons name="log-out-outline" size={22} color={colors.status.error} />
+          </Pressable>
         </View>
+      </View>
 
-        {/* [UX-018] Category Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.catRow} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
-          <CategoryTab label={`Todos (${rawItems.length})`}       active={category === 'all'}     onPress={() => setCategory('all')} />
-          <CategoryTab label={`Productos (${productCount})`}      active={category === 'product'} onPress={() => setCategory('product')} />
-          <CategoryTab label={`Servicios (${serviceCount})`}      active={category === 'service'} onPress={() => setCategory('service')} />
-        </ScrollView>
+      {/* Subscription Warning Banner */}
+      {subscriptionWarning && (
+        <View style={st.warningBanner}>
+          <Ionicons name="warning-outline" size={18} color="#F59E0B" />
+          <Text style={st.warningText}>{subscriptionWarning}</Text>
+        </View>
+      )}
+
+      {/* Search Bar */}
+      <View style={st.searchBar}>
+        <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+        <TextInput
+          style={st.searchInput}
+          placeholder="Buscar productos o servicios..."
+          placeholderTextColor="#9CA3AF"
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+        />
+        {search.length > 0 && (
+          <Pressable hitSlop={12} onPress={() => setSearch('')}>
+            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+          </Pressable>
+        )}
+      </View>
+
+      {/* [UX-018] Category Tabs */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.catRow} contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}>
+        <CategoryTab label={`Todos (${rawItems.length})`}       active={category === 'all'}     onPress={() => setCategory('all')} />
+        <CategoryTab label={`Productos (${productCount})`}      active={category === 'product'} onPress={() => setCategory('product')} />
+        <CategoryTab label={`Servicios (${serviceCount})`}      active={category === 'service'} onPress={() => setCategory('service')} />
+      </ScrollView>
 
         {/* [UX-016] Three distinct states */}
         {isLoading ? (
@@ -296,6 +300,12 @@ export default function CatalogScreen() {
 // ─── styles ───────────────────────────────────────────────────────────────────
 const st = StyleSheet.create({
   container:       { flex: 1, backgroundColor: colors.bg.base },
+
+  // Header
+  header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing[4], paddingBottom: spacing[2] },
+  headerTitle:     { fontSize: 22, fontWeight: typography.weight.bold, color: colors.text.primary },
+  headerRight:     { flexDirection: 'row', alignItems: 'center' },
+  logoutBtn:       { padding: 8, marginLeft: 4 },
 
   // Sync badge
   syncBadge:       { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing[2], paddingVertical: 3, marginRight: spacing[2] },
