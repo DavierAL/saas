@@ -50,6 +50,9 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState<boolean>(true);
+  const [barbers, setBarbers] = useState<{id: string, name: string}[]>([]);
+  const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
+  const [barberStats, setBarberStats] = useState<{totalSales: number, totalTips: number, orderCount: number, totalCommission: number} | null>(null);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -77,6 +80,65 @@ export default function AnalyticsPage() {
         setLoading(false);
       });
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    async function fetchBarbers() {
+      const { data: usersData } = await supabase
+        .from("users")
+        .select("id, name")
+        .eq("tenant_id", tenantId)
+        .eq("role", "barber")
+        .is("deleted_at", null);
+      setBarbers(usersData || []);
+    }
+    fetchBarbers();
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    async function fetchBarberStats() {
+      // Fetch commission rates from tenant_members
+      const { data: membersData } = await supabase
+        .from("tenant_members")
+        .select("auth_user_id, commission_rate");
+      
+      // Build a map of user_id -> commission_rate (default 40% for barbers)
+      const commissionMap = new Map<string, number>();
+      (membersData || []).forEach((m: any) => {
+        commissionMap.set(m.auth_user_id, m.commission_rate || 0.40);
+      });
+
+      let query = supabase
+        .from("orders")
+        .select("total_amount, tip_amount, user_id")
+        .eq("tenant_id", tenantId)
+        .eq("status", "paid")
+        .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      
+      if (selectedBarberId) {
+        query = query.eq("user_id", selectedBarberId);
+      }
+      
+      const { data: ordersData } = await query;
+      
+      if (ordersData && ordersData.length > 0) {
+        const totals = ordersData.reduce((acc, o) => {
+          const rate = commissionMap.get(o.user_id) || 0.40;
+          return {
+            totalSales: acc.totalSales + (o.total_amount || 0),
+            totalTips: acc.totalTips + (o.tip_amount || 0),
+            orderCount: acc.orderCount + 1,
+            totalCommission: acc.totalCommission + ((o.total_amount || 0) * rate),
+          };
+        }, { totalSales: 0, totalTips: 0, orderCount: 0, totalCommission: 0 });
+        setBarberStats(totals);
+      } else {
+        setBarberStats({ totalSales: 0, totalTips: 0, orderCount: 0, totalCommission: 0 });
+      }
+    }
+    fetchBarberStats();
+  }, [tenantId, selectedBarberId]);
 
   // Calculate summary metrics
   const totalRevenue = useMemo(
@@ -239,6 +301,105 @@ export default function AnalyticsPage() {
           >
             📥 Exportar por Categoría
           </button>
+        </div>
+
+        {/* Barber Stats Section */}
+        <div style={{
+          backgroundColor: SURFACE,
+          borderRadius: "12px",
+          padding: "1.5rem",
+          marginBottom: "1.5rem",
+          border: "1px solid var(--border-color)",
+        }}>
+          <h2 style={{ marginTop: 0, marginBottom: "1rem", fontSize: "18px", fontWeight: 600 }}>
+            📈 Rendimiento de Barberos
+          </h2>
+          
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+            <select
+              value={selectedBarberId || ""}
+              onChange={(e) => setSelectedBarberId(e.target.value || null)}
+              style={{
+                padding: "0.5rem 1rem",
+                backgroundColor: DARK_BG,
+                color: TEXT_PRIMARY,
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                fontSize: "14px",
+              }}
+            >
+              <option value="">Todos los barberos</option>
+              {barbers.map((barber) => (
+                <option key={barber.id} value={barber.id}>{barber.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {barberStats && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+              <div style={{
+                backgroundColor: DARK_BG,
+                borderRadius: "8px",
+                padding: "1rem",
+                textAlign: "center",
+              }}>
+                <p style={{ margin: 0, color: TEXT_SECONDARY, fontSize: "13px" }}>Ventas</p>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "24px", fontWeight: 700, color: ACCENT }}>
+                  S/ {(barberStats.totalSales / 100).toFixed(2)}
+                </p>
+              </div>
+              <div style={{
+                backgroundColor: DARK_BG,
+                borderRadius: "8px",
+                padding: "1rem",
+                textAlign: "center",
+              }}>
+                <p style={{ margin: 0, color: TEXT_SECONDARY, fontSize: "13px" }}>Propinas</p>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "24px", fontWeight: 700, color: "#F59E0B" }}>
+                  S/ {(barberStats.totalTips / 100).toFixed(2)}
+                </p>
+              </div>
+              <div style={{
+                backgroundColor: DARK_BG,
+                borderRadius: "8px",
+                padding: "1rem",
+                textAlign: "center",
+              }}>
+                <p style={{ margin: 0, color: TEXT_SECONDARY, fontSize: "13px" }}>Órdenes</p>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "24px", fontWeight: 700, color: colors.status.info }}>
+                  {barberStats.orderCount}
+                </p>
+              </div>
+              <div style={{
+                backgroundColor: DARK_BG,
+                borderRadius: "8px",
+                padding: "1rem",
+                textAlign: "center",
+              }}>
+                <p style={{ margin: 0, color: TEXT_SECONDARY, fontSize: "13px" }}>Ticket Promedio</p>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "24px", fontWeight: 700, color: TEXT_PRIMARY }}>
+                  S/ {barberStats.orderCount > 0 ? ((barberStats.totalSales / 100) / barberStats.orderCount).toFixed(2) : "0.00"}
+                </p>
+              </div>
+              <div style={{
+                backgroundColor: DARK_BG,
+                borderRadius: "8px",
+                padding: "1rem",
+                textAlign: "center",
+              }}>
+                <p style={{ margin: 0, color: TEXT_SECONDARY, fontSize: "13px" }}>Comisión Est.</p>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "24px", fontWeight: 700, color: "#EC4899" }}>
+                  S/ {(barberStats.totalCommission / 100).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {barbers.length === 0 && (
+            <p style={{ color: TEXT_SECONDARY, fontSize: "14px" }}>
+              No hay barberos registrados. Agrega usuarios con rol "barbero" para ver estadísticas.
+            </p>
+          )}
         </div>
 
         {!hasSession && (

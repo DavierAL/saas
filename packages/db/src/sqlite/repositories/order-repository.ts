@@ -37,15 +37,17 @@ export class SqliteOrderRepository implements IOrderRepositoryPort {
     await this.db.writeTransaction(async (tx) => {
       // 1. Insert order header
       await tx.execute(
-        `INSERT INTO orders (id, tenant_id, user_id, customer_name, status, total_amount, currency, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO orders (id, tenant_id, user_id, customer_id, customer_name, status, total_amount, tip_amount, currency, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           order.id,
           order.tenant_id,
           order.user_id,
+          order.customer_id ?? null,
           order.customer_name,
           order.status,
           order.total_amount,
+          order.tip_amount,
           order.currency,
           order.created_at,
           order.updated_at,
@@ -90,7 +92,7 @@ export class SqliteOrderRepository implements IOrderRepositoryPort {
     }
 
     const rows = await this.db.getAll<Order>(
-      `SELECT id, tenant_id, user_id, customer_name, status, total_amount, currency,
+      `SELECT id, tenant_id, user_id, customer_id, customer_name, status, total_amount, tip_amount, currency,
               created_at, updated_at, deleted_at
        FROM orders
        WHERE ${whereFlags.join(' AND ')}
@@ -103,7 +105,7 @@ export class SqliteOrderRepository implements IOrderRepositoryPort {
 
   async findById(id: string, tenantId: string): Promise<Order | null> {
     const row = await this.db.getOptional<Order>(
-      `SELECT id, tenant_id, user_id, customer_name, status, total_amount, currency,
+      `SELECT id, tenant_id, user_id, customer_id, customer_name, status, total_amount, tip_amount, currency,
               created_at, updated_at, deleted_at
        FROM orders WHERE id = ? AND tenant_id = ?`,
       [id, tenantId],

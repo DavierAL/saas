@@ -17,7 +17,7 @@ export class SqliteItemRepository implements IItemRepositoryPort {
 
   async findAll(tenantId: string): Promise<Item[]> {
     const rows = await this.db.getAll<Item>(
-      `SELECT id, tenant_id, type, name, price, stock,
+      `SELECT id, tenant_id, type, name, price, stock, duration_minutes,
               created_at, updated_at, deleted_at
        FROM items
        WHERE tenant_id = ? AND deleted_at IS NULL
@@ -29,7 +29,7 @@ export class SqliteItemRepository implements IItemRepositoryPort {
 
   async findById(id: string, tenantId: string): Promise<Item | null> {
     const row = await this.db.getOptional<Item>(
-      `SELECT id, tenant_id, type, name, price, stock,
+      `SELECT id, tenant_id, type, name, price, stock, duration_minutes,
               created_at, updated_at, deleted_at
        FROM items WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL`,
       [id, tenantId],
@@ -39,7 +39,7 @@ export class SqliteItemRepository implements IItemRepositoryPort {
 
   async findByType(type: ItemType, tenantId: string): Promise<Item[]> {
     return this.db.getAll<Item>(
-      `SELECT id, tenant_id, type, name, price, stock,
+      `SELECT id, tenant_id, type, name, price, stock, duration_minutes,
               created_at, updated_at, deleted_at
        FROM items
        WHERE tenant_id = ? AND type = ? AND deleted_at IS NULL
@@ -59,15 +59,16 @@ export class SqliteItemRepository implements IItemRepositoryPort {
       name:       data.name,
       price:      data.price,
       stock:      data.stock,
+      duration_minutes: data.duration_minutes ?? null,
       created_at: nowISO(),
       updated_at: nowISO(),
       deleted_at: null,
     };
 
     await this.db.execute(
-      `INSERT INTO items (id, tenant_id, type, name, price, stock, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [item.id, item.tenant_id, item.type, item.name, item.price, item.stock, item.created_at, item.updated_at],
+      `INSERT INTO items (id, tenant_id, type, name, price, stock, duration_minutes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [item.id, item.tenant_id, item.type, item.name, item.price, item.stock, item.duration_minutes, item.created_at, item.updated_at],
     );
 
     return item;
@@ -75,7 +76,7 @@ export class SqliteItemRepository implements IItemRepositoryPort {
 
   async update(
     id: string,
-    patch: Partial<Pick<Item, 'name' | 'price' | 'stock'>>,
+    patch: Partial<Pick<Item, 'name' | 'price' | 'stock' | 'duration_minutes'>>,
     tenantId: string,
   ): Promise<void> {
     const fields: string[] = [];
@@ -84,6 +85,7 @@ export class SqliteItemRepository implements IItemRepositoryPort {
     if (patch.name  !== undefined) { fields.push('name = ?');  values.push(patch.name); }
     if (patch.price !== undefined) { fields.push('price = ?'); values.push(patch.price); }
     if (patch.stock !== undefined) { fields.push('stock = ?'); values.push(patch.stock); }
+    if (patch.duration_minutes !== undefined) { fields.push('duration_minutes = ?'); values.push(patch.duration_minutes); }
 
     if (fields.length === 0) return;
 

@@ -7,6 +7,7 @@ export type ItemFormData = {
   type: ItemType;
   price: string;
   stock: string;
+  duration_minutes: string;
   sku: string;
   barcode: string;
   image_url: string;
@@ -58,6 +59,7 @@ export function useCatalog(tenantId: string | null) {
           type: formData.type,
           price: priceCents,
           stock: formData.type === "service" ? undefined : parseInt(formData.stock, 10),
+          duration_minutes: formData.type === "service" && formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null,
           sku: formData.sku || undefined,
           barcode: formData.barcode || undefined,
           image_url: formData.image_url || undefined,
@@ -95,6 +97,7 @@ export function useCatalog(tenantId: string | null) {
           name: formData.name,
           price: priceCents,
           stock: formData.type === "service" ? undefined : parseInt(formData.stock, 10),
+          duration_minutes: formData.type === "service" && formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null,
           sku: formData.sku || undefined,
           barcode: formData.barcode || undefined,
           image_url: formData.image_url || undefined,
@@ -151,7 +154,7 @@ export function useCatalog(tenantId: string | null) {
 
 export function getEmptyFormData(): ItemFormData {
   return {
-    name: "", type: "product", price: "", stock: "0",
+    name: "", type: "product", price: "", stock: "0", duration_minutes: "",
     sku: "", barcode: "", image_url: "", cost: "",
     brand: "", category: "", variant: "", weight_quantity: "",
     min_stock: "5", description: "",
@@ -165,6 +168,7 @@ export function itemToFormData(item: Item): ItemFormData {
     type: item.type,
     price: (item.price / 100).toString(),
     stock: item.stock?.toString() ?? "0",
+    duration_minutes: item.duration_minutes?.toString() ?? "",
     sku: item.sku ?? "",
     barcode: item.barcode ?? "",
     image_url: item.image_url ?? "",

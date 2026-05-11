@@ -41,9 +41,11 @@ export interface Order {
   readonly id: string;
   readonly tenant_id: string;
   readonly user_id: string;
+  readonly customer_id?: string | null;
   readonly customer_name: string | null;
   readonly status: OrderStatus;
   readonly total_amount: number;
+  readonly tip_amount: number;
   readonly currency: string;
   readonly payment_method?: PaymentMethod | null;
   readonly created_at: string;

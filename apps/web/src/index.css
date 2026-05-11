@@ -163,3 +163,164 @@ body {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
 }
+
+/* ==================== CSS Animations (css-animations skill) ==================== */
+
+/* 1. Page Fade In - Entrance animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-wrapper {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+/* 2. Stagger delay for list items */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+
+/* 3. Hover scale for buttons and interactive elements */
+.btn-animate,
+.nav-link,
+button:not(.hamburger-btn):not(.toggle-password),
+.card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-animate:hover,
+button:not(.hamburger-btn):not(.toggle-password):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-animate:active,
+button:not(.hamburger-btn):not(.toggle-password):active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 4. Nav link hover animation */
+.nav-link {
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.nav-link:hover {
+  transform: translateX(2px);
+}
+
+/* 5. Pulse animation for active indicators */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.sync-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 6. Shimmer loading effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* 7. Scale in animation for dropdowns and modals */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.user-dropdown,
+.modal-content {
+  animation: scaleIn 0.2s ease-out both;
+}
+
+/* 8. Slide in from right for sidebar */
+@keyframes slideInRight {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.sidebar.open {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* 9. Button press feedback */
+@keyframes buttonPress {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+button:not(.hamburger-btn):not(.toggle-password) {
+  animation: buttonPress 0.1s ease;
+}
+
+/* 10. Fade animation for toggles */
+@keyframes fadeToggle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.toggle-content {
+  animation: fadeToggle 0.2s ease-out;
+}
+
+/* 11. Spin loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

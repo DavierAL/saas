@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -59,17 +60,26 @@ export function LoginPage() {
 
           <div style={s.inputGroup}>
             <label style={s.label}>Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              placeholder="••••••••"
-              style={s.input}
-              required
-            />
+            <div style={s.passwordWrapper}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                placeholder="••••••••"
+                style={s.passwordInput}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={s.togglePassword}
+              >
+                {showPassword ? '👁' : '👁‍🗨'}
+              </button>
+            </div>
           </div>
 
-          <button type="submit" disabled={loading} style={s.button}>
+          <button type="submit" disabled={loading} className="btn-animate" style={s.button}>
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
@@ -178,6 +188,33 @@ const s: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     fontSize: '14px',
     outline: 'none',
+  },
+  passwordWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    padding: '10px 36px 10px 12px',
+    borderRadius: '6px',
+    border: '1px solid var(--border-color)',
+    backgroundColor: 'var(--bg-app)',
+    color: 'var(--text-primary)',
+    fontSize: '14px',
+    outline: 'none',
+    width: '100%',
+  },
+  togglePassword: {
+    position: 'absolute',
+    right: '8px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '16px',
+    padding: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   button: {
     marginTop: '8px',

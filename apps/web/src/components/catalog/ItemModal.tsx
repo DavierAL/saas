@@ -8,6 +8,7 @@ type ItemFormData = {
   type: ItemType;
   price: string;
   stock: string;
+  duration_minutes: string;
   sku: string;
   barcode: string;
   image_url: string;
@@ -32,7 +33,7 @@ type ItemModalProps = {
 };
 
 const emptyForm: ItemFormData = {
-  name: "", type: "product", price: "", stock: "0",
+  name: "", type: "product", price: "", stock: "0", duration_minutes: "",
   sku: "", barcode: "", image_url: "", cost: "",
   brand: "", category: "", variant: "", weight_quantity: "",
   min_stock: "5", description: "",
@@ -49,6 +50,7 @@ export function ItemModal({ isOpen, onClose, onSubmit, editingItem, submitting }
         type: editingItem.type,
         price: (editingItem.price / 100).toString(),
         stock: editingItem.stock?.toString() ?? "0",
+        duration_minutes: editingItem.duration_minutes?.toString() ?? "",
         sku: editingItem.sku ?? "",
         barcode: editingItem.barcode ?? "",
         image_url: editingItem.image_url ?? "",
@@ -127,6 +129,12 @@ export function ItemModal({ isOpen, onClose, onSubmit, editingItem, submitting }
               <div style={s.field}>
                 <label style={s.label}>Stock Mín.</label>
                 <input type="number" min="0" value={formData.min_stock} onChange={(e) => updateField("min_stock", e.target.value)} style={s.input} placeholder="5" />
+              </div>
+            )}
+            {!isProduct && (
+              <div style={s.field}>
+                <label style={s.label}>Duración (min)</label>
+                <input type="number" min="1" value={formData.duration_minutes} onChange={(e) => updateField("duration_minutes", e.target.value)} style={s.input} placeholder="30" />
               </div>
             )}
           </div>

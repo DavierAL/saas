@@ -28,6 +28,7 @@ export function OrdersTable({ orders, onOrderClick, hasMore, loadingMore, onLoad
             <tr>
               <th style={s.th}>ID</th>
               <th style={s.th}>Fecha</th>
+              <th style={s.th}>Cliente</th>
               <th style={{ ...s.th, textAlign: "right" }}>Total</th>
               <th style={{ ...s.th, textAlign: "right" }}>Estado</th>
             </tr>
@@ -45,6 +46,10 @@ export function OrdersTable({ orders, onOrderClick, hasMore, loadingMore, onLoad
                 >
                   <td style={s.td}>#{order.id.slice(-6)}</td>
                   <td style={s.td}>{new Date(order.created_at).toLocaleString("es-PE")}</td>
+                  <td style={s.td}>
+                    {order.customer_id && <span style={s.registeredBadge} title="Cliente registrado">👤 </span>}
+                    {order.customer_name || "—"}
+                  </td>
                   <td style={{ ...s.td, textAlign: "right", color: "#3ECF8E", fontWeight: 600 }}>
                     {formatMoney(createMoney(order.total_amount, "PEN"))}
                   </td>
@@ -104,6 +109,7 @@ const s: Record<string, CSSProperties> = {
     fontSize: 11,
     fontWeight: 600,
   },
+  registeredBadge: { fontSize: 12 },
   loadMore: { display: "flex", justifyContent: "center" },
   loadBtn: {
     padding: "0.5rem 1rem",

@@ -23,6 +23,7 @@ interface CreateItemInput {
   name: string;
   price: number;          // integer cents
   stock: number | null;   // null for services
+  duration_minutes?: number | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
@@ -46,6 +47,7 @@ export const createItem = (input: CreateItemInput): Item => {
     name:       input.name.trim(),
     price:      input.price,
     stock:      input.stock,
+    duration_minutes: input.duration_minutes ?? null,
     created_at: input.created_at,
     updated_at: input.updated_at,
     deleted_at: input.deleted_at ?? null,
@@ -58,9 +60,11 @@ interface CreateOrderInput {
   id: string;
   tenant_id: string;
   user_id: string;
+  customer_id?: string | null;
   customer_name?: string | null;
   status: OrderStatus;
   total_amount: number; // integer cents
+  tip_amount?: number;  // integer cents
   currency: string;     // [DOM-008]
   created_at: string;
   updated_at: string;
@@ -79,13 +83,15 @@ export const createOrder = (input: CreateOrderInput): Order => {
   return {
     id:           input.id,
     tenant_id:    input.tenant_id,
-    user_id:     input.user_id,
+    user_id:      input.user_id,
+    customer_id:  input.customer_id ?? null,
     customer_name: input.customer_name ?? null,
-    status:      input.status,
+    status:       input.status,
     total_amount: input.total_amount,
-    currency:    input.currency.trim().toUpperCase(),
-    created_at:  input.created_at,
-    updated_at:  input.updated_at,
+    tip_amount:   input.tip_amount ?? 0,
+    currency:     input.currency.trim().toUpperCase(),
+    created_at:   input.created_at,
+    updated_at:   input.updated_at,
     deleted_at:   input.deleted_at ?? null,
   };
 };

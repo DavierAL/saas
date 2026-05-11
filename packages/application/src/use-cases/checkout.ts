@@ -14,7 +14,9 @@ export interface CheckoutLineInput {
 export interface CheckoutInput {
   readonly tenant_id: string;
   readonly user_id: string;
+  readonly customer_id?: string | null;
   readonly customer_name?: string;
+  readonly tip_amount?: number;
   readonly lines: readonly CheckoutLineInput[];
 }
 
@@ -87,15 +89,18 @@ export const checkout = async (
   }));
 
   const total = calculateOrderTotal(input.lines, currency);
+  const tipAmount = input.tip_amount ?? 0;
 
   const order: Order = {
     id:           orderId,
     tenant_id:    input.tenant_id,
     user_id:      input.user_id,
+    customer_id:  input.customer_id ?? null,
     customer_name: input.customer_name ?? null,
     currency:     currency, // [DOM-008]
     status:       'paid',  // POS: paid immediately at counter
     total_amount: total.amount,
+    tip_amount:   tipAmount,
     created_at:   now,
     updated_at:   now,
     deleted_at:   null,

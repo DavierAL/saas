@@ -27,6 +27,7 @@ describe('SqliteOrderRepository', () => {
       customer_name: null,
       status:        'paid',
       total_amount:  1000,
+      tip_amount:    0,
       currency:      'PEN',
       created_at:    '2026-04-19T21:15:00Z',
       updated_at:   '2026-04-19T21:15:00Z',

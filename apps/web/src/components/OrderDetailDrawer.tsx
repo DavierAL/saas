@@ -166,6 +166,22 @@ export function OrderDetailDrawer({
 
         {/* Footer */}
         <div style={s.footer}>
+          {(order.tip_amount || 0) > 0 && (
+            <div style={s.subtotalRow}>
+              <span style={s.subtotalLabel}>Subtotal</span>
+              <span style={s.subtotalValue}>
+                {formatMoney(createMoney(order.total_amount - (order.tip_amount || 0), order.currency))}
+              </span>
+            </div>
+          )}
+          {(order.tip_amount || 0) > 0 && (
+            <div style={s.subtotalRow}>
+              <span style={s.subtotalLabel}>Propina</span>
+              <span style={s.subtotalValue}>
+                {formatMoney(createMoney(order.tip_amount || 0, order.currency))}
+              </span>
+            </div>
+          )}
           <div style={s.totalRow}>
             <span style={s.totalLabel}>Total</span>
             <span style={s.totalValue}>
@@ -348,9 +364,12 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 12,
   },
-  totalRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  totalLabel: { fontSize: 14, fontWeight: 600, color: "var(--text-secondary)" },
+  totalRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-light)" },
+  totalLabel: { fontSize: 14, fontWeight: 700, color: "var(--text-primary)" },
   totalValue: { fontSize: 20, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.5px" },
+  subtotalRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  subtotalLabel: { fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" },
+  subtotalValue: { fontSize: 14, fontWeight: 500, color: "var(--text-primary)" },
   actionsRow: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 },
   actionBtn: { padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none" },
   cancelBtn: { backgroundColor: "var(--error-bg)", color: "var(--error-color)", border: "1px solid var(--error-border)" },

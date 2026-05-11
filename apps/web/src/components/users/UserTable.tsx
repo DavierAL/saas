@@ -11,12 +11,14 @@ const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   cashier: "Cajero",
   waiter: "Mesero",
+  staff: "Profesional",
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
   admin: "#3ECF8E",
   cashier: "#8B5CF6",
   waiter: "#F59E0B",
+  staff: "#EC4899",
 };
 
 export function UserTable({ users, onEdit, onDelete }: UserTableProps) {

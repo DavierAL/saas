@@ -38,6 +38,22 @@ const items = new Table(
     name: column.text,
     price: column.integer,
     stock: column.integer,
+    duration_minutes: column.integer,
+    created_at: column.text,
+    updated_at: column.text,
+    deleted_at: column.text
+  },
+  { indexes: {} }
+);
+
+const customers = new Table(
+  {
+    // id column (text) is automatically included
+    tenant_id: column.text,
+    name: column.text,
+    phone: column.text,
+    email: column.text,
+    notes: column.text,
     created_at: column.text,
     updated_at: column.text,
     deleted_at: column.text
@@ -50,8 +66,10 @@ const orders = new Table(
     // id column (text) is automatically included
     tenant_id: column.text,
     user_id: column.text,
+    customer_id: column.text,
     status: column.text,
     total_amount: column.integer,
+    tip_amount: column.integer,
     created_at: column.text,
     updated_at: column.text,
     deleted_at: column.text,
@@ -88,6 +106,8 @@ const appointments = new Table(
   {
     // id column (text) is automatically included
     tenant_id: column.text,
+    customer_id: column.text,
+    barber_id: column.text,
     customer_name: column.text,
     item_id: column.text,
     start_time: column.text,
@@ -100,6 +120,7 @@ export const AppSchema = new Schema({
   tenants,
   users,
   items,
+  customers,
   orders,
   order_lines,
   tables_restaurant,

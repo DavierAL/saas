@@ -18,28 +18,33 @@ interface CartStore extends CartState {
   removeItem: (item_id: string) => void;
   updateQuantity: (item_id: string, quantity: number) => void;
   clearCart: () => void;
+  setCustomerId: (id: string | null) => void;
   setCustomerName: (name: string) => void;
   setPaymentMethod: (method: PaymentMethod | null | undefined) => void;
+  setTipAmount: (amount: number) => void;
   total: () => number;
   itemCount: () => number;
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
   items: [],
+  customer_id: null,
   customerName: '',
   paymentMethod: null,
+  tipAmount: 0,
 
   addItem: (item, quantity = 1) =>
-    set((state) => addItemToCart(state, item, quantity)),
+    set((state) => ({ ...state, items: addItemToCart(state, item, quantity).items })),
 
   removeItem: (item_id) =>
-    set((state) => removeItemFromCart(state, item_id)),
+    set((state) => ({ ...state, items: removeItemFromCart(state, item_id).items })),
 
   updateQuantity: (item_id, quantity) => {
     if (quantity <= 0) {
-      set((state) => removeItemFromCart(state, item_id));
+      set((state) => ({ ...state, items: removeItemFromCart(state, item_id).items }));
     } else {
       set((state) => ({
+        ...state,
         items: state.items.map((item) =>
           item.item_id === item_id ? { ...item, quantity } : item,
         ),
@@ -47,13 +52,17 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 
-  clearCart: () => set({ items: [], customerName: '', paymentMethod: null }),
+  clearCart: () => set({ items: [], customer_id: null, customerName: '', paymentMethod: null, tipAmount: 0 }),
+
+  setCustomerId: (id) => set({ customer_id: id }),
 
   setCustomerName: (name) => set({ customerName: name }),
 
   setPaymentMethod: (method) => set({ paymentMethod: method }),
 
-  total: () => getCartTotal(get(), 'PEN'),
+  setTipAmount: (amount) => set({ tipAmount: amount }),
+
+  total: () => getCartTotal(get(), 'PEN') + (get().tipAmount ?? 0),
 
   itemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
 }));

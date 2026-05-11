@@ -15,14 +15,16 @@ import StockAlertsPage from './pages/StockAlertsPage';
 import PaymentMethodsPage from './pages/PaymentMethodsPage';
 import TablesPage from './pages/TablesPage';
 import AppointmentsPage from './pages/AppointmentsPage';
+import { CustomersPage } from './pages/CustomersPage';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { AuthGuard } from './components/AuthGuard';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { useTenantId } from './hooks/useTenantId';
+import { useTenant } from './hooks/useTenant';
 import { useCases } from './lib/use-cases';
 
-type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'users' | 'subscription' | 'cash-closing' | 'stock-alerts' | 'payment-methods' | 'tables' | 'appointments' | 'settings';
+type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'users' | 'subscription' | 'cash-closing' | 'stock-alerts' | 'payment-methods' | 'tables' | 'appointments' | 'customers' | 'settings';
 
 const NAV = [
   { id: 'overview'        as NavId,   path: '/',                 icon: '◼', label: 'Overview'       },
@@ -38,13 +40,36 @@ const NAV = [
   { id: 'payment-methods' as NavId, path: '/payment-methods', icon: '💳', label: 'Pagos'         },
   { id: 'tables'        as NavId,   path: '/tables',           icon: '🪑', label: 'Mesas'          },
   { id: 'appointments' as NavId,   path: '/appointments',    icon: '📅', label: 'Citas'         },
+  { id: 'customers'    as NavId,   path: '/customers',        icon: '👥', label: 'Clientes'      },
   { id: 'settings'      as NavId,   path: '/settings',        icon: '◬', label: 'Ajustes'       },
 ];
 
 function Sidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () => void; onLogout: () => void }) {
+  const { tenantId } = useTenantId();
+  const { tenant } = useTenant(tenantId);
+
   const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
     ...s.navItem,
     ...(isActive ? s.navActive : {}),
+  });
+
+  const filteredNav = NAV.filter((item) => {
+    if (!tenant) return true;
+    
+    // Modules config
+    if (item.id === 'appointments' && !tenant.modules_config?.has_appointments) return false;
+    if (item.id === 'tables' && !tenant.modules_config?.has_tables) return false;
+    if ((item.id === 'inventory' || item.id === 'stock-alerts') && !tenant.modules_config?.has_inventory) return false;
+
+    // Global simplifications for demo
+    if (['tenants', 'subscription', 'payment-methods'].includes(item.id)) return false;
+
+    // Industry specific simplifications
+    if (tenant.industry_type === 'barbershop') {
+      if (item.id === 'stock-alerts') return false; // Simplify for barbershop
+    }
+
+    return true;
   });
 
   return (
@@ -56,7 +81,7 @@ function Sidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () =
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>SaaS POS</span>
         </div>
         <nav style={s.nav}>
-          {NAV.map((item) => (
+          {filteredNav.map((item) => (
             <RouterNavLink
               key={item.id}
               to={item.path}
@@ -121,8 +146,8 @@ function OverviewPage() {
           { label: 'Órdenes hoy',    value: loading ? '...' : String(stats.orders),                             accent: false },
           { label: 'Tenants activos',value: '1',                             accent: false },
           { label: 'Sync status',    value: 'OK',                            accent: true  },
-        ].map((item) => (
-          <div key={item.label} style={s.statCard}>
+        ].map((item, i) => (
+          <div key={item.label} className={`stagger-${i + 1}`} style={s.statCard}>
             <p style={s.statLabel}>{item.label}</p>
             <p style={{ ...s.statValue, ...(item.accent ? { color: '#3ECF8E' } : {}) }}>{item.value}</p>
           </div>
@@ -136,8 +161,8 @@ function OverviewPage() {
             { name: 'Supabase',   status: '✓ Conectado',   ok: true,  desc: 'Auth + PostgreSQL + RLS' },
             { name: 'PowerSync',  status: '⚙ Configurar', ok: false, desc: 'SQLite ↔ Postgres sync' },
             { name: 'Expo EAS',   status: '✓ Listo',       ok: true,  desc: 'Mobile build + OTA updates' },
-          ].map((item) => (
-            <div key={item.name} style={s.stackRow}>
+          ].map((item, i) => (
+            <div key={item.name} className={`stagger-${i + 1}`} style={s.stackRow}>
               <span style={s.stackName}>{item.name}</span>
               <span style={s.stackDesc}>{item.desc}</span>
               <span style={{ color: item.ok ? '#3ECF8E' : '#F59E0B', fontWeight: 600, fontSize: 12 }}>{item.status}</span>
@@ -224,6 +249,7 @@ export function App() {
                   <Route path="/payment-methods" element={<PaymentMethodsPage />} />
                   <Route path="/tables" element={<TablesPage />} />
                   <Route path="/appointments" element={<AppointmentsPage />} />
+                  <Route path="/customers" element={<CustomersPage />} />
                   <Route path="/settings" element={
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
                       <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
@@ -275,13 +301,13 @@ const s: Record<string, React.CSSProperties> = {
   activeBadge:  { display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, backgroundColor: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 12, color: 'var(--accent-color)', fontWeight: 500 },
   activeDot:    { width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent-color)' },
   statGrid:     { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 },
-  statCard:     { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '18px 20px' },
+  statCard:     { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '18px 20px', animation: 'fadeIn 0.4s ease-out both' },
   statLabel:    { fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.3px', textTransform: 'uppercase', margin: '0 0 8px' },
   statValue:    { fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px', margin: 0 },
   sectionWrap:  { marginBottom: 28 },
   sectionTitle: { fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.4px', textTransform: 'uppercase', margin: '0 0 12px' },
   stackTable:   { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden' },
-  stackRow:     { display: 'flex', alignItems: 'center', gap: 16, padding: '12px 18px', borderBottom: '1px solid var(--border-light)' },
+  stackRow:     { display: 'flex', alignItems: 'center', gap: 16, padding: '12px 18px', borderBottom: '1px solid var(--border-light)', animation: 'fadeIn 0.4s ease-out both' },
   stackName:    { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', minWidth: 110 },
   stackDesc:    { flex: 1, fontSize: 13, color: 'var(--text-secondary)' },
 };

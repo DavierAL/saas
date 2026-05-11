@@ -9,8 +9,10 @@ export interface CartItem {
 
 export interface CartState {
   readonly items: readonly CartItem[];
+  readonly customer_id?: string | null;
   readonly customerName?: string;
   readonly paymentMethod?: 'cash' | 'yape' | 'plin' | 'transfer' | null;
+  readonly tipAmount?: number;
 }
 
 export const addItemToCart = (

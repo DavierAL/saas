@@ -4,12 +4,15 @@ import { supabase } from "../lib/supabase";
 
 interface Appointment {
   id: string;
-  client_name: string;
-  client_phone?: string;
+  customer_id?: string;
+  customer_name: string;
+  customer_phone?: string;
   item_id: string;
   item_name?: string;
-  scheduled_at: string;
+  barber_id?: string;
+  barber_name?: string;
   duration_minutes: number;
+  start_time: string;
   status: 'scheduled' | 'done' | 'cancelled';
   notes?: string;
   tenant_id: string;
@@ -21,15 +24,19 @@ const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8am - 8pm
 export default function AppointmentsPage() {
   const { tenantId, loading: tenantLoading } = useTenantId();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [items, setItems] = useState<{id: string, name: string}[]>([]);
+  const [items, setItems] = useState<{id: string, name: string, duration_minutes?: number}[]>([]);
+  const [barbers, setBarbers] = useState<{id: string, name: string}[]>([]);
+  const [customers, setCustomers] = useState<{id: string, name: string, phone?: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]!);
   const [showCreate, setShowCreate] = useState(false);
   const [newAppointment, setNewAppointment] = useState({
-    client_name: "",
-    client_phone: "",
+    customer_id: "",
+    customer_name: "",
+    customer_phone: "",
     item_id: "",
-    scheduled_at: "",
+    barber_id: "",
+    start_time: "",
     duration_minutes: 30,
     notes: "",
   });
@@ -43,12 +50,12 @@ export default function AppointmentsPage() {
         const end = `${selectedDate}T23:59:59`;
         const { data: appts } = await supabase
           .from("appointments")
-          .select("*, item:items(name)")
-          .gte("scheduled_at", start)
-          .lte("scheduled_at", end)
+          .select("*, item:items(name), barber:users!barber_id(name), customer:customers(name)")
+          .gte("start_time", start)
+          .lte("start_time", end)
           .eq("tenant_id", tenantId)
           .is("deleted_at", null)
-          .order("scheduled_at");
+          .order("start_time");
 
         const { data: itemsData } = await supabase
           .from("items")
@@ -57,8 +64,29 @@ export default function AppointmentsPage() {
           .eq("type", "service")
           .is("deleted_at", null);
 
-        setAppointments(appts || []);
+        const { data: usersData } = await supabase
+          .from("users")
+          .select("id, name")
+          .eq("tenant_id", tenantId)
+          .eq("role", "barber")
+          .is("deleted_at", null);
+
+        const { data: customersData } = await supabase
+          .from("customers")
+          .select("id, name, phone")
+          .eq("tenant_id", tenantId)
+          .is("deleted_at", null)
+          .order("name");
+
+        const apptsWithBarber = (appts || []).map((a: any) => ({
+          ...a,
+          barber_name: a.barber?.name || null,
+        }));
+
+        setAppointments(apptsWithBarber);
         setItems(itemsData || []);
+        setBarbers(usersData || []);
+        setCustomers(customersData || []);
       } catch (e) {
         console.error(e);
       } finally {
@@ -68,16 +96,33 @@ export default function AppointmentsPage() {
     fetch();
   }, [tenantId, selectedDate]);
 
+  const hasOverlap = (barberId: string, startTime: string, duration: number) => {
+    const newStart = new Date(`${selectedDate}T${startTime}:00`).getTime();
+    const newEnd = newStart + duration * 60 * 1000;
+    return appointments.some((a) => {
+      if (a.barber_id !== barberId || a.status === "cancelled") return false;
+      const existStart = new Date(a.start_time).getTime();
+      const existEnd = existStart + (a.duration_minutes || 30) * 60 * 1000;
+      return newStart < existEnd && newEnd > existStart;
+    });
+  };
+
   const handleCreate = async () => {
-    if (!tenantId || !newAppointment.client_name || !newAppointment.item_id || !newAppointment.scheduled_at) return;
+    if (!tenantId || !newAppointment.customer_name || !newAppointment.item_id || !newAppointment.start_time) return;
+    if (newAppointment.barber_id && hasOverlap(newAppointment.barber_id, newAppointment.start_time, newAppointment.duration_minutes)) {
+      alert("El barbero ya tiene una cita en ese horario. Elige otro horario o barbero.");
+      return;
+    }
     try {
       const { data } = await supabase
         .from("appointments")
         .insert({
-          client_name: newAppointment.client_name,
-          client_phone: newAppointment.client_phone || null,
+          customer_id: newAppointment.customer_id || null,
+          customer_name: newAppointment.customer_name,
+          customer_phone: newAppointment.customer_phone || null,
           item_id: newAppointment.item_id,
-          scheduled_at: `${selectedDate}T${newAppointment.scheduled_at}:00`,
+          barber_id: newAppointment.barber_id || null,
+          start_time: `${selectedDate}T${newAppointment.start_time}:00`,
           duration_minutes: newAppointment.duration_minutes,
           notes: newAppointment.notes || null,
           status: "scheduled",
@@ -87,7 +132,7 @@ export default function AppointmentsPage() {
         .single();
       if (data) setAppointments([...appointments, data]);
       setShowCreate(false);
-      setNewAppointment({ client_name: "", client_phone: "", item_id: "", scheduled_at: "", duration_minutes: 30, notes: "" });
+      setNewAppointment({ customer_id: "", customer_name: "", customer_phone: "", item_id: "", barber_id: "", start_time: "", duration_minutes: 30, notes: "" });
     } catch (e) {
       console.error(e);
     }
@@ -100,7 +145,7 @@ export default function AppointmentsPage() {
 
   const getAppointmentsForHour = (hour: number) => {
     return appointments.filter((a) => {
-      const hourOnly = new Date(a.scheduled_at).getHours();
+      const hourOnly = new Date(a.start_time).getHours();
       return hourOnly === hour;
     });
   };
@@ -141,8 +186,12 @@ export default function AppointmentsPage() {
                         : "var(--accent-color)",
                   }}
                 >
-                  <div style={s.apptClient}>{appt.client_name}</div>
+                  <div style={s.apptClient}>
+                    {appt.customer_id && <span style={s.registeredBadge} title="Cliente registrado">👤</span>}
+                    {appt.customer_name}
+                  </div>
                   <div style={s.apptService}>{(appt as any).item?.name || "Servicio"}</div>
+                  {appt.barber_name && <div style={s.apptBarber}>✂️ {appt.barber_name}</div>}
                   <div style={s.apptActions}>
                     <button onClick={() => handleStatusChange(appt.id, "done")} style={s.actionBtn}>✓</button>
                     <button onClick={() => handleStatusChange(appt.id, "cancelled")} style={s.actionBtn}>✕</button>
@@ -158,24 +207,61 @@ export default function AppointmentsPage() {
         <div style={s.modalOverlay} onClick={() => setShowCreate(false)}>
           <div style={s.modal} onClick={(e) => e.stopPropagation()}>
             <h3 style={s.modalTitle}>Nueva Cita</h3>
-            <label style={s.label}>Cliente:</label>
+            <label style={s.label}>Cliente registrado:</label>
+            <select
+              value={newAppointment.customer_id}
+              onChange={(e) => {
+                const customer = customers.find(c => c.id === e.target.value);
+                setNewAppointment({
+                  ...newAppointment,
+                  customer_id: e.target.value,
+                  customer_name: customer?.name || "",
+                  customer_phone: customer?.phone || "",
+                });
+              }}
+              style={s.select}
+            >
+              <option value="">Nuevo cliente / Walk-in</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>{customer.name}</option>
+              ))}
+            </select>
+            <label style={s.label}>Nombre:</label>
             <input
-              value={newAppointment.client_name}
-              onChange={(e) => setNewAppointment({ ...newAppointment, client_name: e.target.value })}
+              value={newAppointment.customer_name}
+              onChange={(e) => setNewAppointment({ ...newAppointment, customer_name: e.target.value })}
               style={s.input}
               placeholder="Nombre del cliente"
             />
             <label style={s.label}>Teléfono:</label>
             <input
-              value={newAppointment.client_phone}
-              onChange={(e) => setNewAppointment({ ...newAppointment, client_phone: e.target.value })}
+              value={newAppointment.customer_phone}
+              onChange={(e) => setNewAppointment({ ...newAppointment, customer_phone: e.target.value })}
               style={s.input}
               placeholder="+51..."
             />
+            <label style={s.label}>Barbero:</label>
+            <select
+              value={newAppointment.barber_id}
+              onChange={(e) => setNewAppointment({ ...newAppointment, barber_id: e.target.value })}
+              style={s.select}
+            >
+              <option value="">Seleccionar barbero</option>
+              {barbers.map((barber) => (
+                <option key={barber.id} value={barber.id}>{barber.name}</option>
+              ))}
+            </select>
             <label style={s.label}>Servicio:</label>
             <select
               value={newAppointment.item_id}
-              onChange={(e) => setNewAppointment({ ...newAppointment, item_id: e.target.value })}
+              onChange={(e) => {
+                const item = items.find(i => i.id === e.target.value);
+                setNewAppointment({
+                  ...newAppointment,
+                  item_id: e.target.value,
+                  duration_minutes: item?.duration_minutes || 30,
+                });
+              }}
               style={s.select}
             >
               <option value="">Seleccionar servicio</option>
@@ -183,15 +269,24 @@ export default function AppointmentsPage() {
                 <option key={item.id} value={item.id}>{item.name}</option>
               ))}
             </select>
+            <label style={s.label}>Duración (min):</label>
+            <input
+              type="number"
+              min="5"
+              step="5"
+              value={newAppointment.duration_minutes}
+              onChange={(e) => setNewAppointment({ ...newAppointment, duration_minutes: parseInt(e.target.value, 10) || 30 })}
+              style={s.input}
+            />
             <label style={s.label}>Hora:</label>
             <select
-              value={newAppointment.scheduled_at}
-              onChange={(e) => setNewAppointment({ ...newAppointment, scheduled_at: e.target.value })}
+              value={newAppointment.start_time}
+              onChange={(e) => setNewAppointment({ ...newAppointment, start_time: e.target.value })}
               style={s.select}
             >
               <option value="">Seleccionar hora</option>
               {HOURS.map((h) => (
-                <option key={h} value={h.toString()}>{h}:00</option>
+                <option key={h} value={h.toString().padStart(2, '0')}>{h}:00</option>
               ))}
             </select>
             <div style={s.modalButtons}>
@@ -219,10 +314,12 @@ const s: Record<string, React.CSSProperties> = {
   hourLabel: { width: 60, fontSize: 12, fontWeight: 600, color: "var(--text-muted)", paddingTop: 8 },
   hourSlots: { flex: 1, display: "flex", gap: 8, flexWrap: "wrap", backgroundColor: "var(--bg-surface)", borderRadius: 6, padding: 8, minHeight: 50 },
   appointmentCard: { padding: "8px 12px", borderRadius: 4, borderLeft: "3px solid", width: "100%" },
-  apptClient: { fontSize: 13, fontWeight: 600, color: "var(--text-primary)" },
+  apptClient: { fontSize: 13, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 4 },
   apptService: { fontSize: 11, color: "var(--text-secondary)", marginTop: 2 },
+  apptBarber: { fontSize: 10, color: "var(--text-muted)", marginTop: 2 },
   apptActions: { display: "flex", gap: 4, marginTop: 4 },
   actionBtn: { padding: "2px 6px", borderRadius: 2, border: "none", backgroundColor: "transparent", color: "var(--text-secondary)", fontSize: 10, cursor: "pointer" },
+  registeredBadge: { fontSize: 12 },
   modalOverlay: { position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 },
   modal: { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 10, padding: 24, width: "90%", maxWidth: 360 },
   modalTitle: { margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "var(--text-primary)" },

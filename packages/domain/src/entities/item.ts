@@ -23,4 +23,5 @@ export interface Item {
   readonly has_expiry?: boolean;
   readonly expiry_date?: string;
   readonly expiry_comments?: string;
+  readonly duration_minutes?: number | null;
 }

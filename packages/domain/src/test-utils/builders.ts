@@ -19,6 +19,7 @@ export class ItemBuilder {
     name:       'Test Item',
     price:      1000,
     stock:      10,
+    duration_minutes: null,
     created_at: nowISO(),
     updated_at: nowISO(),
     deleted_at: null,
@@ -41,6 +42,11 @@ export class ItemBuilder {
 
   withStock(stock: number | null) {
     this.item = { ...this.item, stock };
+    return this;
+  }
+
+  withDuration(minutes: number | null) {
+    this.item = { ...this.item, duration_minutes: minutes };
     return this;
   }
 
@@ -99,10 +105,12 @@ export class OrderBuilder {
     id:            generateId(),
     tenant_id:     'tenant-1',
     user_id:       'user-1',
+    customer_id:   null,
     customer_name: null,
     status:        'paid',
     total_amount:  1000,
-    currency:     'PEN',
+    tip_amount:    0,
+    currency:      'PEN',
     created_at:    nowISO(),
     updated_at:    nowISO(),
     deleted_at:    null,
@@ -115,6 +123,11 @@ export class OrderBuilder {
 
   withTotal(amount: number) {
     this.order = { ...this.order, total_amount: amount };
+    return this;
+  }
+
+  withCustomerId(customerId: string | null) {
+    this.order = { ...this.order, customer_id: customerId };
     return this;
   }
 

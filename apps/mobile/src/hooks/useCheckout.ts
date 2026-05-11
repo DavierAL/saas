@@ -37,6 +37,7 @@ export const useCheckout = () => {
           tenant_id: tenantId,
           user_id: session?.user?.id ?? 'unknown',
           customer_name: cart.customerName || undefined,
+          tip_amount: cart.tipAmount || undefined,
           lines: cart.items.map((item) => ({
             item_id:    item.item_id,
             quantity:   item.quantity,

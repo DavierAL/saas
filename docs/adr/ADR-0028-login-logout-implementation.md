@@ -107,7 +107,7 @@ npm run typecheck
 ┌─────────────────┐
 │ 🔵 SaaS POS     │
 ├─────────────────┤
-│ ◼ Overview      │
+│ ◼ Overview      │ 
 │ ◈ Catálogo      │
 │ ...             │
 │ ◬ Ajustes       │

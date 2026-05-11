@@ -6,6 +6,7 @@ export interface CreateItemInput {
   readonly type: ItemType;
   readonly price: number;
   readonly stock?: number;
+  readonly duration_minutes?: number | null;
   readonly sku?: string;
   readonly barcode?: string;
   readonly image_url?: string;
@@ -25,6 +26,7 @@ export interface UpdateItemInput {
   readonly name?: string;
   readonly price?: number;
   readonly stock?: number;
+  readonly duration_minutes?: number | null;
   readonly sku?: string;
   readonly barcode?: string;
   readonly image_url?: string;
@@ -66,6 +68,7 @@ export const createItem = async (
       name:      input.name.trim(),
       price:     input.price,
       stock:     input.type === 'service' ? null : (input.stock ?? 0),
+      duration_minutes: input.type === 'service' ? input.duration_minutes ?? null : null,
       sku:              input.sku,
       barcode:          input.barcode,
       image_url:        input.image_url,

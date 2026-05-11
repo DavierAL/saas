@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS public.tenant_members (
   auth_user_id  UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
   role          TEXT NOT NULL DEFAULT 'cashier'
-                  CHECK (role IN ('admin', 'cashier', 'waiter')),
+                  CHECK (role IN ('admin', 'cashier', 'waiter', 'staff')),
+  commission_rate NUMERIC(5,4) DEFAULT 0  -- [ADR-0032] Commission rate for service professionals (e.g. 0.40 = 40%)
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -72,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role          TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'waiter')),
+  role          TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'waiter', 'staff')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at    TIMESTAMPTZ
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS public.items (
   -- avoids floating-point precision issues
   price       INTEGER NOT NULL CHECK (price >= 0),
   stock       INTEGER CHECK (stock >= 0),  -- NULL for services
+  duration_minutes INTEGER,  -- [ADR-0032] Service duration for scheduling (e.g. 30 = 30 min)
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at  TIMESTAMPTZ
@@ -117,6 +119,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
   user_id       UUID NOT NULL REFERENCES public.users(id)   ON DELETE RESTRICT,
+  customer_id   UUID REFERENCES public.customers(id) ON DELETE SET NULL,  -- [ADR-0032] Link to registered customer
   -- [ADR-003] Full state machine aligned with domain/entities/order.ts
   --   pending -> paid | cancelled | voided
   --   paid    -> refunded | partially_refunded
@@ -124,6 +127,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   status        TEXT NOT NULL DEFAULT 'pending'
                   CHECK (status IN ('pending', 'paid', 'cancelled', 'refunded', 'partially_refunded', 'voided')),
   total_amount  INTEGER NOT NULL CHECK (total_amount >= 0),  -- integer cents
+  tip_amount    INTEGER NOT NULL DEFAULT 0,  -- integer cents, tips from clients
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at    TIMESTAMPTZ,
@@ -189,8 +193,12 @@ CREATE POLICY "tables_tenant_isolation" ON public.tables_restaurant
 CREATE TABLE IF NOT EXISTS public.appointments (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
+  customer_id   UUID REFERENCES public.customers(id) ON DELETE SET NULL,  -- [ADR-0032] Link to registered customer
   customer_name TEXT NOT NULL,
+  customer_phone TEXT,
   item_id       UUID NOT NULL REFERENCES public.items(id) ON DELETE RESTRICT,
+  barber_id     UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  duration_minutes INTEGER DEFAULT 30,
   start_time    TIMESTAMPTZ NOT NULL,
   status        TEXT NOT NULL DEFAULT 'scheduled'
                   CHECK (status IN ('scheduled', 'done', 'cancelled'))
@@ -277,6 +285,28 @@ DO $$ BEGIN
     FOR EACH ROW EXECUTE FUNCTION public.handle_soft_delete();
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ============================================================
+-- Customers table for barbershop client management
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.customers (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id   UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
+  name        TEXT NOT NULL,
+  phone       TEXT,
+  email       TEXT,
+  notes       TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at  TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_customers_tenant_id ON public.customers(tenant_id);
+
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "customers_tenant_isolation" ON public.customers
+  FOR ALL USING (tenant_id::TEXT = public.tenant_id());
 
 DO $$ BEGIN
   CREATE TRIGGER trg_orders_soft_delete
