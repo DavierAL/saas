@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { colors, spacing, radius, typography } from '../tokens';
 import { InputProps } from './types';
@@ -12,13 +12,25 @@ export function Input({
   secureTextEntry, 
   keyboardType = 'default',
   autoCapitalize = 'none',
-  helperText 
+  helperText,
+  accessibilityLabel,
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const inputId = useId();
+  const labelId = `${inputId}-label`;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
+  
+  const computedAccessibilityLabel = accessibilityLabel || label;
+  const hasError = !!error;
 
   return (
     <View style={s.container}>
-      {label && <Text style={s.label}>{label}</Text>}
+      {label && (
+        <Text style={s.label} id={labelId}>
+          {label}
+        </Text>
+      )}
       <TextInput
         style={[
           s.input,
@@ -34,11 +46,17 @@ export function Input({
         autoCapitalize={autoCapitalize}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        accessibilityLabel={hasError ? `${computedAccessibilityLabel}, error: ${error}` : computedAccessibilityLabel}
+        accessibilityHint={helperText ?? undefined}
       />
       {error ? (
-        <Text style={s.errorText}>{error}</Text>
+        <Text style={s.errorText} id={errorId} accessibilityRole="alert">
+          {error}
+        </Text>
       ) : helperText ? (
-        <Text style={s.helperText}>{helperText}</Text>
+        <Text style={s.helperText} id={helperId}>
+          {helperText}
+        </Text>
       ) : null}
     </View>
   );

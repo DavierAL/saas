@@ -15,7 +15,7 @@ import { useModulesConfig } from '../../src/hooks/useModulesConfig';
 
 const HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
-type AppointmentStatus = 'scheduled' | 'done' | 'cancelled';
+type AppointmentStatus = 'scheduled' | 'done' | 'cancelled' | 'completed';
 
 interface AppointmentRow {
   id: string;
@@ -29,12 +29,26 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   scheduled: 'Programada',
   done: 'Completada',
   cancelled: 'Cancelada',
+  completed: 'Completada',
 };
 
 export default function AppointmentsScreen() {
   const { tenantId } = useAuth();
   const modules = useModulesConfig(tenantId);
   const [today] = useState(() => new Date());
+
+  const weekDays = useMemo(() => {
+    const days = [];
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [today]);
 
   const appointments = usePowerSyncQuery<AppointmentRow>(
     `SELECT a.id, a.customer_name, a.start_time, a.status, a.item_id
@@ -43,7 +57,7 @@ export default function AppointmentsScreen() {
      ORDER BY a.start_time ASC`,
     [tenantId ?? '', today.toISOString().split('T')[0]!],
   ) as AppointmentRow[];
-  
+
   if (!modules.has_appointments) {
     return (
       <>
@@ -58,19 +72,6 @@ export default function AppointmentsScreen() {
       </>
     );
   }
-
-  const weekDays = useMemo(() => {
-    const days = [];
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(startOfWeek);
-      d.setDate(startOfWeek.getDate() + i);
-      days.push(d);
-    }
-    return days;
-  }, [today]);
 
   return (
     <>
@@ -101,7 +102,11 @@ export default function AppointmentsScreen() {
         {/* Appointments List */}
         <View style={s.appointmentsList}>
           {(appointments ?? []).map((apt) => {
-            const timeStr = new Date(apt.start_time).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+            const date = apt.start_time ? new Date(apt.start_time) : null;
+            const timeStr = date && !isNaN(date.getTime())
+              ? date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+              : '--:--';
+            const statusLabel = STATUS_LABELS[apt.status] ?? apt.status;
             return (
             <Pressable key={apt.id} style={s.appointmentCard}>
               <View style={s.appointmentTime}>
@@ -115,7 +120,7 @@ export default function AppointmentsScreen() {
                 </View>
               </View>
               <View style={s.appointmentStatus}>
-                <Text style={s.appointmentStatusText}>{STATUS_LABELS[apt.status]}</Text>
+                <Text style={s.appointmentStatusText}>{statusLabel}</Text>
               </View>
             </Pressable>
             );

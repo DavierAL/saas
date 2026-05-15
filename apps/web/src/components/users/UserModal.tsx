@@ -80,6 +80,7 @@ export function UserModal({ isOpen, onClose, onSubmit, onUpdateRole, editingUser
                 <option value="admin">Administrador</option>
                 <option value="cashier">Cajero</option>
                 <option value="waiter">Mesero</option>
+                <option value="barber">Barbero</option>
               </select>
             </div>
           </>
@@ -94,6 +95,7 @@ export function UserModal({ isOpen, onClose, onSubmit, onUpdateRole, editingUser
               <option value="admin">Administrador</option>
               <option value="cashier">Cajero</option>
               <option value="waiter">Mesero</option>
+              <option value="barber">Barbero</option>
             </select>
           </div>
         )}

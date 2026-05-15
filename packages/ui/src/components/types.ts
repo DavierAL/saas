@@ -14,6 +14,7 @@ export interface ButtonProps {
   loading?: boolean;
   icon?: string;
   style?: any;
+  accessibilityLabel?: string;
 }
 
 // ─── Badge Types ───────────────────────────────────────────────
@@ -42,4 +43,5 @@ export interface InputProps {
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   helperText?: string;
+  accessibilityLabel?: string;
 }

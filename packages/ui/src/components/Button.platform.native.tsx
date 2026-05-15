@@ -11,7 +11,10 @@ export function Button({
   loading,
   children,
   style,
+  accessibilityLabel,
 }: ButtonProps) {
+  const isDisabled = disabled || loading;
+  const buttonLabel = accessibilityLabel || label || (typeof children === 'string' ? children : undefined);
 
   const getStyles = (pressed: boolean) => {
     const base: ViewStyle = {
@@ -23,7 +26,7 @@ export function Button({
     if (pressed) {
       return [{ ...base, ...variantStyles[variant].pressed } as ViewStyle, style];
     }
-    if (disabled || loading) {
+    if (isDisabled) {
       return [{ ...base, opacity: 0.5 } as ViewStyle, style];
     }
     return [base, style];
@@ -32,11 +35,20 @@ export function Button({
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isDisabled}
       style={({ pressed }) => getStyles(pressed)}
+      accessibilityRole="button"
+      accessibilityLabel={buttonLabel}
+      accessibilityState={{ disabled: isDisabled }}
+      accessibilityElementsHidden={loading}
+      importantForAccessibility={loading ? 'no-hide-descendants' : 'auto'}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.bg.base : colors.accent.green} />
+        <ActivityIndicator 
+          color={variant === 'primary' ? colors.bg.base : colors.accent.green} 
+          size="small"
+          accessibilityLabel="Cargando"
+        />
       ) : (
         <Text style={[s.text, variantStyles[variant].text as TextStyle]}>
           {label || children}

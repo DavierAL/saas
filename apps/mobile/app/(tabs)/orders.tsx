@@ -59,7 +59,7 @@ function isThisMonth(d: Date): boolean {
 
 // ─── sub-components ───────────────────────────────────────────────────────────
 
-function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void; key?: string }) {
   return (
     <Pressable
       style={[s.chip, active && s.chipActive]}
@@ -228,7 +228,7 @@ export default function OrdersScreen() {
             ['month', 'Mes'],
           ] as [DateFilter, string][]).map((item) => (
             <FilterChip
-              {...{ key: item[0] } as any}
+              key={item[0]}
               label={item[1]}
               active={dateFilter === item[0]}
               onPress={() => handleFilterChange(item[0])}

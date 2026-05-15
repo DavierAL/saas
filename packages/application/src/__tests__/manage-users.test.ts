@@ -205,7 +205,7 @@ describe('updateUserRole', () => {
   });
 
   test('accepts all valid roles', async () => {
-    const roles: UserRole[] = ['admin', 'cashier', 'waiter'];
+    const roles: UserRole[] = ['admin', 'cashier', 'waiter', 'barber'];
 
     for (const role of roles) {
       userRepo.updateRole.mockResolvedValue(undefined);

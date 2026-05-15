@@ -33,7 +33,7 @@ export const SQLITE_SCHEMA = `
     tenant_id TEXT NOT NULL REFERENCES tenants(id),
     email TEXT NOT NULL UNIQUE,
     -- NOTE: password_hash is intentionally excluded from SQLite (security: no hash on device)
-    role TEXT NOT NULL CHECK(role IN ('admin', 'cashier', 'waiter', 'staff')),
+    role TEXT NOT NULL CHECK(role IN ('admin', 'cashier', 'waiter', 'barber')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at TEXT

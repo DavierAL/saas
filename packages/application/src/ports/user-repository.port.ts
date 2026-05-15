@@ -1,6 +1,6 @@
 import type { User } from "@saas-pos/domain";
 
-export type UserRole = "admin" | "cashier" | "waiter" | "staff";
+export type UserRole = "admin" | "cashier" | "waiter" | "barber";
 
 export interface IUserRepositoryPort {
   findAll(tenantId: string): Promise<User[]>;

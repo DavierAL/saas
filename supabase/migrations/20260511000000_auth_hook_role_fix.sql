@@ -46,19 +46,19 @@ BEGIN
     CREATE ROLE waiter NOLOGIN;
     GRANT authenticated TO waiter;
   END IF;
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'staff') THEN
-    CREATE ROLE staff NOLOGIN;
-    GRANT authenticated TO staff;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'barber') THEN
+    CREATE ROLE barber NOLOGIN;
+    GRANT authenticated TO barber;
   END IF;
 END
 $$;
 
 -- Grant permissions so authenticator can switch to these roles
-GRANT admin, cashier, waiter, staff TO authenticator;
+GRANT admin, cashier, waiter, barber TO authenticator;
 
 -- Ensure these roles have access to the public schema
-GRANT USAGE ON SCHEMA public TO admin, cashier, waiter, staff;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO admin, cashier, waiter, staff;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO admin, cashier, waiter, staff;
-GRANT ALL ON ALL ROUTINES IN SCHEMA public TO admin, cashier, waiter, staff;
+GRANT USAGE ON SCHEMA public TO admin, cashier, waiter, barber;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO admin, cashier, waiter, barber;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO admin, cashier, waiter, barber;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO admin, cashier, waiter, barber;
 

@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useAuth } from '../src/providers/AppProvider';
 import { ToastProvider } from '../src/providers/ToastProvider';
+import { AccessibilityProvider } from '../src/providers/AccessibilityProvider';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
 import { colors } from '@saas-pos/ui';
@@ -50,12 +51,14 @@ function RootContent() {
 function RootLayout() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <ToastProvider>
-          <StatusBar style="light" />
-          <RootContent />
-        </ToastProvider>
-      </AppProvider>
+      <AccessibilityProvider>
+        <AppProvider>
+          <ToastProvider>
+            <StatusBar style="light" />
+            <RootContent />
+          </ToastProvider>
+        </AppProvider>
+      </AccessibilityProvider>
     </ErrorBoundary>
   );
 }

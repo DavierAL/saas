@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS public.tenant_members (
   auth_user_id  UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
-  role          TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'waiter')),
+  role          TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'waiter', 'barber')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

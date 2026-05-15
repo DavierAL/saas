@@ -108,7 +108,13 @@ function EmptyState({
 /** Category tab pill */
 function CategoryTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[st.catTab, active && st.catTabActive]} onPress={onPress}>
+    <Pressable 
+      style={[st.catTab, active && st.catTabActive]} 
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={label}
+    >
       <Text style={[st.catTabText, active && st.catTabTextActive]}>{label}</Text>
     </Pressable>
   );
@@ -123,12 +129,25 @@ function ItemRow({
   const isProduct = item.type === 'product';
   const outOfStock = isProduct && item.stock !== null && item.stock === 0;
   const lowStock = isProduct && item.stock !== null && item.stock > 0 && item.stock <= 3;
+  
+  const priceFormatted = formatMoney(createMoney(item.price, currency));
+  const stockInfo = outOfStock 
+    ? 'Sin stock' 
+    : lowStock 
+      ? `Stock bajo: ${item.stock}` 
+      : item.stock !== null 
+        ? `Stock disponible: ${item.stock}` 
+        : undefined;
 
   return (
     <Pressable
       style={({ pressed }) => [st.row, pressed && st.rowPressed, outOfStock && st.rowDisabled]}
       onPress={() => !outOfStock && onAdd(item)}
       disabled={outOfStock}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.name}, ${priceFormatted}${stockInfo ? `, ${stockInfo}` : ''}`}
+      accessibilityHint={outOfStock ? 'No disponible' : 'Toca para agregar al carrito'}
+      accessibilityState={{ disabled: outOfStock }}
     >
       {/* Type badge */}
       <View style={[st.typePill, { backgroundColor: isProduct ? '#0d2b1e' : '#14143b' }]}>
@@ -175,7 +194,13 @@ function ScanButton() {
   };
   
   return (
-    <Pressable onPress={handlePress} style={{ padding: 8 }}>
+    <Pressable 
+      onPress={handlePress} 
+      style={{ padding: 8 }}
+      accessibilityRole="button"
+      accessibilityLabel="Escáner de código de barras"
+      accessibilityHint="Abre el escáner para buscar productos por código"
+    >
       <Ionicons name="barcode-outline" size={22} color={colors.text.primary} />
     </Pressable>
   );
@@ -232,7 +257,13 @@ export default function CatalogScreen() {
         <View style={st.headerRight}>
           <ScanButton />
           <SyncBadge />
-          <Pressable onPress={async () => { await signOut(); router.replace('/(auth)/login'); }} style={st.logoutBtn}>
+          <Pressable 
+            onPress={async () => { await signOut(); router.replace('/(auth)/login'); }} 
+            style={st.logoutBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
+            accessibilityHint="Termina la sesión actual"
+          >
             <Ionicons name="log-out-outline" size={22} color={colors.status.error} />
             <Text style={{color: colors.status.error, fontSize: 10, marginLeft: 2, fontWeight: 'bold'}}>Salir</Text>
           </Pressable>

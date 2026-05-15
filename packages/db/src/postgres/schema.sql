@@ -52,8 +52,8 @@ CREATE TABLE IF NOT EXISTS public.tenant_members (
   auth_user_id  UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
   role          TEXT NOT NULL DEFAULT 'cashier'
-                  CHECK (role IN ('admin', 'cashier', 'waiter', 'staff')),
-  commission_rate NUMERIC(5,4) DEFAULT 0  -- [ADR-0032] Commission rate for service professionals (e.g. 0.40 = 40%)
+                  CHECK (role IN ('admin', 'cashier', 'waiter', 'barber')),
+  commission_rate NUMERIC(5,4) DEFAULT 0,  -- [ADR-0032] Commission rate for service professionals (e.g. 0.40 = 40%)
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   tenant_id     UUID NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role          TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'waiter', 'staff')),
+  role          TEXT NOT NULL DEFAULT 'cashier' CHECK (role IN ('admin', 'cashier', 'waiter', 'barber')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at    TIMESTAMPTZ

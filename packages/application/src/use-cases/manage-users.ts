@@ -42,9 +42,9 @@ export const createUser = async (
   if (input.password.length < 6) {
     throw new Error("La contraseña debe tener al menos 6 caracteres.");
   }
-  const validRoles: UserRole[] = ["admin", "cashier", "waiter"];
+  const validRoles: UserRole[] = ["admin", "cashier", "waiter", "barber"];
   if (!validRoles.includes(input.role)) {
-    throw new Error("Rol inválido. Debe ser admin, cashier o waiter.");
+    throw new Error("Rol inválido. Debe ser admin, cashier, waiter o barber.");
   }
 
   const existing = await repo.findByEmail(trimmedEmail, tenantId);
@@ -67,7 +67,7 @@ export const updateUserRole = async (
   tenantId: string,
   repo: IUserRepositoryPort,
 ): Promise<void> => {
-  const validRoles: UserRole[] = ["admin", "cashier", "waiter"];
+  const validRoles: UserRole[] = ["admin", "cashier", "waiter", "barber"];
   if (!validRoles.includes(input.role)) {
     throw new Error("Rol inválido.");
   }

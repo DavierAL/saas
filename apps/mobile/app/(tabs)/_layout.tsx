@@ -14,7 +14,7 @@ function TabIcon({ name, color, badge }: { name: any; color: string; badge?: num
     <View style={s.iconContainer}>
       <Ionicons name={name} size={24} color={color} />
       {badge !== undefined && badge > 0 && (
-        <View style={s.badge}>
+        <View style={s.badge} accessibilityElementsHidden={true} importantForAccessibility="no">
           <Text style={s.badgeText}>{badge > 99 ? '99+' : badge}</Text>
         </View>
       )}

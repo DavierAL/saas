@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Animated, Pressable, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '@saas-pos/ui';
+import { useAccessibilityPreferences } from '../providers/AccessibilityProvider';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -35,48 +36,80 @@ interface ToastProps {
 }
 
 export function Toast({ toast, onDismiss }: ToastProps) {
+  const { preferences } = useAccessibilityPreferences();
   const translateY = useRef(new Animated.Value(100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
+  const DURATION_FAST = 100;
+  const DURATION_SLOW = 250;
+  
+  const enterDuration = preferences.prefersReducedMotion ? DURATION_FAST : 200;
+  const exitDuration = preferences.prefersReducedMotion ? DURATION_FAST : 250;
+  const dismissDelay = preferences.prefersReducedMotion ? 1500 : (toast.duration ?? 2800);
+
   useEffect(() => {
     if (toast.visible) {
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 120,
-          friction: 10,
-        }),
+      if (preferences.prefersReducedMotion) {
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 200,
+          duration: DURATION_FAST,
           useNativeDriver: true,
-        }),
-      ]).start();
-
-      const timer = setTimeout(() => {
+          easing: Easing.inOut(Easing.ease),
+        }).start();
+      } else {
         Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: 100,
-            duration: 250,
+          Animated.spring(translateY, {
+            toValue: 0,
             useNativeDriver: true,
+            tension: 120,
+            friction: 10,
           }),
           Animated.timing(opacity, {
-            toValue: 0,
-            duration: 200,
+            toValue: 1,
+            duration: enterDuration,
             useNativeDriver: true,
           }),
-        ]).start(() => onDismiss());
-      }, toast.duration ?? 2800);
+        ]).start();
+      }
+
+      const timer = setTimeout(() => {
+        if (preferences.prefersReducedMotion) {
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: DURATION_FAST,
+            useNativeDriver: true,
+          }).start(() => onDismiss());
+        } else {
+          Animated.parallel([
+            Animated.timing(translateY, {
+              toValue: 100,
+              duration: exitDuration,
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacity, {
+              toValue: 0,
+              duration: exitDuration,
+              useNativeDriver: true,
+            }),
+          ]).start(() => onDismiss());
+        }
+      }, dismissDelay);
 
       return () => clearTimeout(timer);
     }
-  }, [toast.visible]);
+  }, [toast.visible, preferences.prefersReducedMotion]);
 
   if (!toast.visible) return null;
 
   const type = toast.type ?? 'success';
   const cfg = TOAST_COLORS[type];
+  
+  const typeLabels = {
+    success: 'Éxito',
+    error: 'Error',
+    warning: 'Advertencia',
+    info: 'Información',
+  };
 
   return (
     <Animated.View
@@ -84,10 +117,18 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         styles.container,
         { backgroundColor: cfg.bg, borderColor: cfg.border, transform: [{ translateY }], opacity },
       ]}
+      accessibilityRole="alert"
+      accessibilityLabel={`${typeLabels[type]}: ${toast.message}`}
+      accessibilityLiveRegion="polite"
     >
       <Ionicons name={TOAST_ICONS[type]} size={20} color={cfg.icon} />
       <Text style={styles.message} numberOfLines={2}>{toast.message}</Text>
-      <Pressable onPress={onDismiss} hitSlop={8}>
+      <Pressable 
+        onPress={onDismiss} 
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar mensaje"
+      >
         <Ionicons name="close" size={16} color={colors.text.muted} />
       </Pressable>
     </Animated.View>

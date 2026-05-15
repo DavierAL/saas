@@ -53,19 +53,26 @@ function CartItemRow({ item_id, name, unit_price, quantity, currency, onQuantity
         <Pressable 
           style={s.qtyBtn} 
           onPress={() => onQuantityChange(item_id, name, quantity - 1, quantity)}
-          hitSlop={8}
+          accessibilityLabel={`Reducir cantidad de ${name}`}
+          accessibilityRole="button"
         >
-          <Ionicons name="remove" size={16} color={colors.text.primary} />
+          <Ionicons name="remove" size={20} color={colors.text.primary} />
         </Pressable>
-        <Pressable onLongPress={handleManualQuantity} delayLongPress={500}>
+        <Pressable 
+          onLongPress={handleManualQuantity} 
+          delayLongPress={500}
+          accessibilityLabel={`Cantidad: ${quantity}. Mantén presionado para modificar`}
+          accessibilityRole="button"
+        >
           <Text style={s.qtyValue}>{quantity}</Text>
         </Pressable>
         <Pressable 
           style={s.qtyBtn} 
           onPress={() => onQuantityChange(item_id, name, quantity + 1, quantity)}
-          hitSlop={8}
+          accessibilityLabel={`Aumentar cantidad de ${name}`}
+          accessibilityRole="button"
         >
-          <Ionicons name="add" size={16} color={colors.text.primary} />
+          <Ionicons name="add" size={20} color={colors.text.primary} />
         </Pressable>
       </View>
       <Text style={s.cartSubtotal}>{formatMoney(subtotal)}</Text>
@@ -228,8 +235,8 @@ const s = StyleSheet.create({
   cartInfo:           { flex: 1 },
   cartName:           { fontSize: 14, color: colors.text.primary, fontWeight: typography.weight.medium },
   cartUnitPrice:      { fontSize: 11, color: colors.text.muted, marginTop: 2 },
-  cartQty:            { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing[3] },
-  qtyBtn:             { width: 28, height: 28, backgroundColor: colors.bg.surface, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  cartQty:            { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing[3], gap: spacing[1] },
+  qtyBtn:             { width: 44, height: 44, backgroundColor: colors.bg.surface, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   qtyBtnText:         { fontSize: 16, color: colors.text.primary, fontWeight: typography.weight.semibold },
   qtyValue:           { fontSize: 15, color: colors.text.primary, fontWeight: typography.weight.bold, marginHorizontal: spacing[2.5], minWidth: 24, textAlign: 'center' },
   cartSubtotal:       { fontSize: 14, fontWeight: typography.weight.bold, color: colors.accent.green, minWidth: 70, textAlign: 'right' },
