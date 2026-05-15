@@ -13,9 +13,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius } from '@saas-pos/ui';
 const AnyFlashList = require('@shopify/flash-list').FlashList;
 import type { ListRenderItem } from '@shopify/flash-list';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useState, useMemo } from 'react';
 import { Alert } from 'react-native';
+import { triggerHaptic } from '../../src/components/HapticFeedback';
+import { useToast } from '../../src/providers/ToastProvider';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useItems } from '../../src/hooks/useItems';
 import { useSyncStatus } from '../../src/hooks/useSyncStatus';
@@ -185,6 +187,7 @@ export default function CatalogScreen() {
   const { status, hasSynced } = useSyncStatus();
   const { tenant, isLoading: isTenantLoading } = useTenant(tenantId);
   const { signOut } = useSession();
+  const toast = useToast();
 
   const rawItems = useItems(tenantId ?? '');
   const addItem  = useCartStore((s) => s.addItem);
@@ -212,6 +215,8 @@ export default function CatalogScreen() {
 
   const handleAdd = (item: Item) => {
     addItem({ item_id: item.id, name: item.name, unit_price: item.price });
+    triggerHaptic('success');
+    toast.showSuccess(`${item.name} agregado`);
   };
 
   const currency = tenant?.currency || 'PEN';
@@ -227,8 +232,9 @@ export default function CatalogScreen() {
         <View style={st.headerRight}>
           <ScanButton />
           <SyncBadge />
-          <Pressable onPress={() => signOut()} style={st.logoutBtn}>
+          <Pressable onPress={async () => { await signOut(); router.replace('/(auth)/login'); }} style={st.logoutBtn}>
             <Ionicons name="log-out-outline" size={22} color={colors.status.error} />
+            <Text style={{color: colors.status.error, fontSize: 10, marginLeft: 2, fontWeight: 'bold'}}>Salir</Text>
           </Pressable>
         </View>
       </View>
@@ -292,8 +298,7 @@ export default function CatalogScreen() {
             }
           />
         )}
-      </View>
-    </>
+    </View>
   );
 }
 
@@ -305,7 +310,7 @@ const st = StyleSheet.create({
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing[4], paddingBottom: spacing[2] },
   headerTitle:     { fontSize: 22, fontWeight: typography.weight.bold, color: colors.text.primary },
   headerRight:     { flexDirection: 'row', alignItems: 'center' },
-  logoutBtn:       { padding: 8, marginLeft: 4 },
+  logoutBtn:       { padding: 8, marginLeft: 4, flexDirection: 'row', alignItems: 'center' },
 
   // Sync badge
   syncBadge:       { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing[2], paddingVertical: 3, marginRight: spacing[2] },

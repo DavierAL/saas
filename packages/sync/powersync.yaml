@@ -1,6 +1,6 @@
 bucket_definitions:
   tenant_data:
-    parameters: SELECT request.jwt() ->> 'tenant_id' AS tenant_id
+    parameters: SELECT request.jwt() -> 'user_metadata' ->> 'tenant_id' AS tenant_id
 
     data:
       - SELECT * FROM public.tenants

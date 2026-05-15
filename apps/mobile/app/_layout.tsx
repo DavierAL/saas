@@ -2,12 +2,29 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useAuth } from '../src/providers/AppProvider';
+import { ToastProvider } from '../src/providers/ToastProvider';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
 import { colors } from '@saas-pos/ui';
 
 // ─── Root Layout ──────────────────────────────────────────────
 function RootContent() {
+  const { session, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!session && !inAuthGroup) {
+      // Si no hay sesión y no estamos en auth, redirigir a login
+      router.replace('/(auth)/login');
+    }
+    // No redirigimos al inicio si hay sesión porque app/index.tsx ya maneja el flujo de carga (DB y sync).
+  }, [session, isLoading, segments, router]);
+
   return (
     <Stack
       screenOptions={{
@@ -34,8 +51,10 @@ function RootLayout() {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <StatusBar style="light" />
-        <RootContent />
+        <ToastProvider>
+          <StatusBar style="light" />
+          <RootContent />
+        </ToastProvider>
       </AppProvider>
     </ErrorBoundary>
   );

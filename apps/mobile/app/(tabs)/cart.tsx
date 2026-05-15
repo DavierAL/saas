@@ -9,14 +9,16 @@ import { useCheckout } from '../../src/hooks/useCheckout';
 import { formatMoney, createMoney } from '@saas-pos/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { PaymentMethodSelector } from '../../src/components/PaymentMethodSelector';
+import { triggerHaptic } from '../../src/components/HapticFeedback';
+import { useToast } from '../../src/providers/ToastProvider';
 import type { PaymentMethod } from '@saas-pos/domain';
 import { useAuth } from '../../src/providers/AppProvider';
 import { useTenant } from '../../src/hooks/useTenant';
 
-function CartItemRow({ item_id, name, unit_price, quantity, currency }: {
+function CartItemRow({ item_id, name, unit_price, quantity, currency, onQuantityChange }: {
   item_id: string; name: string; unit_price: number; quantity: number; currency: string;
+  onQuantityChange: (item_id: string, name: string, newQty: number, currentQty: number) => void;
 }) {
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
   const subtotal = createMoney(unit_price * quantity, currency);
 
   const handleManualQuantity = () => {
@@ -29,7 +31,9 @@ function CartItemRow({ item_id, name, unit_price, quantity, currency }: {
           text: 'OK', 
           onPress: (val?: string) => {
             const num = parseInt(val || '0', 10);
-            if (!isNaN(num)) updateQuantity(item_id, num);
+            if (!isNaN(num) && num !== quantity) {
+              onQuantityChange(item_id, name, num, quantity);
+            }
           }
         },
       ],
@@ -48,7 +52,7 @@ function CartItemRow({ item_id, name, unit_price, quantity, currency }: {
       <View style={s.cartQty}>
         <Pressable 
           style={s.qtyBtn} 
-          onPress={() => updateQuantity(item_id, Math.max(0, quantity - 1))}
+          onPress={() => onQuantityChange(item_id, name, quantity - 1, quantity)}
           hitSlop={8}
         >
           <Ionicons name="remove" size={16} color={colors.text.primary} />
@@ -58,7 +62,7 @@ function CartItemRow({ item_id, name, unit_price, quantity, currency }: {
         </Pressable>
         <Pressable 
           style={s.qtyBtn} 
-          onPress={() => updateQuantity(item_id, quantity + 1)}
+          onPress={() => onQuantityChange(item_id, name, quantity + 1, quantity)}
           hitSlop={8}
         >
           <Ionicons name="add" size={16} color={colors.text.primary} />
@@ -73,11 +77,14 @@ export default function CartScreen() {
   const { tenantId } = useAuth();
   const { tenant } = useTenant(tenantId);
   const setCurrency = useCartStore((s) => s.setCurrency);
+  const toast = useToast();
 
   const items = useCartStore((st) => st.items);
   const currency = tenant?.currency || 'PEN';
   const total = useCartStore((st) => st.total());
   const clearCart = useCartStore((st) => st.clearCart);
+  const updateQuantity = useCartStore((st) => st.updateQuantity);
+  const removeItem = useCartStore((st) => st.removeItem);
   const customerName = useCartStore((st) => st.customerName);
   const setCustomerName = useCartStore((st) => st.setCustomerName);
   const paymentMethod = useCartStore((st) => st.paymentMethod);
@@ -85,12 +92,20 @@ export default function CartScreen() {
   const { state, error, processCheckout, reset } = useCheckout();
 
   const handleCheckout = async () => {
+    if (total <= 0) {
+      toast.showWarning('Agrega productos al carrito antes de cobrar');
+      return;
+    }
     const result = await processCheckout();
     if (result === 'success') {
+      triggerHaptic('success');
       Alert.alert('✓ Venta registrada', 'La orden fue guardada exitosamente.', [
         { text: 'Ir a órdenes', onPress: () => { reset(); router.replace('/(tabs)/orders'); } },
         { text: 'Nueva venta', onPress: () => { reset(); router.replace('/(tabs)'); } },
       ]);
+    } else if (result === 'error') {
+      triggerHaptic('error');
+      toast.showError(error ?? 'Error al procesar la venta');
     }
   };
 
@@ -100,9 +115,33 @@ export default function CartScreen() {
       'Esta acción eliminará todos los productos del carrito actual.',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Vaciar', style: 'destructive', onPress: clearCart },
+        { text: 'Vaciar', style: 'destructive', onPress: () => {
+          clearCart();
+          triggerHaptic('warning');
+          toast.showInfo('Carrito vaciado');
+        }},
       ]
     );
+  };
+
+  const handleQuantityChange = (item_id: string, name: string, newQty: number, currentQty: number) => {
+    if (newQty === 0 && currentQty > 0) {
+      Alert.alert(
+        `¿Eliminar "${name}"?`,
+        'El producto será eliminado del carrito.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Eliminar', style: 'destructive', onPress: () => {
+            removeItem(item_id);
+            triggerHaptic('warning');
+            toast.showInfo(`${name} eliminado`);
+          }},
+        ]
+      );
+    } else {
+      updateQuantity(item_id, newQty);
+      triggerHaptic('selection');
+    }
   };
 
   return (
@@ -132,7 +171,7 @@ export default function CartScreen() {
           <>
             <ScrollView style={s.list}>
               {items.map((item) => (
-                <CartItemRow key={item.item_id} {...item} currency={currency} />
+                <CartItemRow key={item.item_id} {...item} currency={currency} onQuantityChange={handleQuantityChange} />
               ))}
             </ScrollView>
 
