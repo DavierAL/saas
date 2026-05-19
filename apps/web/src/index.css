@@ -6,6 +6,9 @@
   --bg-primary: #0f0f0f;
   --bg-surface: #1c1c1c;
   --bg-hover: #1a1a1a;
+  --bg-app: #0f0f0f;
+  --bg-base: #0f0f0f;
+  --bg-elevated: #252525;
   --border-color: #272727;
   --border-light: #1e1e1e;
   
@@ -32,6 +35,9 @@
   --bg-primary: #f8fafc;
   --bg-surface: #ffffff;
   --bg-hover: #f1f5f9;
+  --bg-app: #f8fafc;
+  --bg-base: #f8fafc;
+  --bg-elevated: #e2e8f0;
   --border-color: #e2e8f0;
   --border-light: #cbd5e1;
   
@@ -203,13 +209,11 @@ button:not(.hamburger-btn):not(.toggle-password),
 .btn-animate:hover,
 button:not(.hamburger-btn):not(.toggle-password):hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn-animate:active,
 button:not(.hamburger-btn):not(.toggle-password):active {
   transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* 4. Nav link hover animation */
@@ -285,37 +289,6 @@ button:not(.hamburger-btn):not(.toggle-password):active {
 
 .sidebar.open {
   animation: slideInRight 0.3s ease-out;
-}
-
-/* 9. Button press feedback */
-@keyframes buttonPress {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.97);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-button:not(.hamburger-btn):not(.toggle-password) {
-  animation: buttonPress 0.1s ease;
-}
-
-/* 10. Fade animation for toggles */
-@keyframes fadeToggle {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.toggle-content {
-  animation: fadeToggle 0.2s ease-out;
 }
 
 /* 11. Spin loading animation */

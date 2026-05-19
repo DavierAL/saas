@@ -16,6 +16,7 @@ import {
 import { useCases } from "../lib/use-cases";
 import type { OrderAnalytics } from "@saas-pos/domain";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { PageIcon } from "../components/PageIcon";
 import { colors, spacing, typography, radius } from "@saas-pos/ui";
 import { supabase } from "../lib/supabase";
 import { useTenantId } from "../hooks/useTenantId";
@@ -167,7 +168,7 @@ export default function AnalyticsPage() {
           justifyContent: "center",
         }}
       >
-        <h2 style={{ color: ACCENT }}>📊 Cargando estadísticas...</h2>
+        <h2 style={{ color: ACCENT }}>Cargando estadísticas...</h2>
         <p style={{ color: TEXT_SECONDARY }}>Esto puede tomar un momento.</p>
       </div>
     );
@@ -187,7 +188,7 @@ export default function AnalyticsPage() {
           justifyContent: "center",
         }}
       >
-        <h2 style={{ color: ACCENT }}>⚠️ Sin tenant</h2>
+        <h2 style={{ color: ACCENT }}>Sin tenant</h2>
         <p style={{ color: TEXT_SECONDARY }}>No se pudo determinar el tenant.</p>
       </div>
     );
@@ -212,11 +213,11 @@ export default function AnalyticsPage() {
             padding: "2rem",
             backgroundColor: SURFACE,
             borderRadius: "8px",
-            border: "1px solid #2b0d0d",
+            border: "1px solid var(--error-border)",
             textAlign: "center",
           }}
         >
-          <h2 style={{ color: "#EF4444" }}>❌ Error de conexión</h2>
+          <h2 style={{ color: "#EF4444" }}>Error de conexión</h2>
           <p>{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -249,7 +250,7 @@ export default function AnalyticsPage() {
         }}
       >
         <h1 style={{ marginTop: 0, fontSize: typography.size["6xl"], fontWeight: typography.weight.bold }}>
-          📊 Analytics Real-time
+          <PageIcon name="analytics" />Analytics
         </h1>
 
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
@@ -267,7 +268,7 @@ export default function AnalyticsPage() {
               opacity: !data || data.daily_sales.length === 0 ? 0.5 : 1,
             }}
           >
-            📥 Exportar Ventas Diarias
+            Exportar Ventas Diarias
           </button>
           <button
             onClick={() => data && exportTopItemsToCsv(data, tenantId)}
@@ -283,7 +284,7 @@ export default function AnalyticsPage() {
               opacity: !data || data.top_items.length === 0 ? 0.5 : 1,
             }}
           >
-            📥 Exportar Top Items
+            Exportar Top Items
           </button>
           <button
             onClick={() => data && exportRevenueByCategoryToCsv(data, tenantId)}
@@ -299,7 +300,7 @@ export default function AnalyticsPage() {
               opacity: !data || data.revenue_by_category.length === 0 ? 0.5 : 1,
             }}
           >
-            📥 Exportar por Categoría
+            Exportar por Categoría
           </button>
         </div>
 
@@ -312,7 +313,7 @@ export default function AnalyticsPage() {
           border: "1px solid var(--border-color)",
         }}>
           <h2 style={{ marginTop: 0, marginBottom: "1rem", fontSize: "18px", fontWeight: 600 }}>
-            📈 Rendimiento de Barberos
+            Rendimiento de Barberos
           </h2>
           
           <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
@@ -405,16 +406,15 @@ export default function AnalyticsPage() {
         {!hasSession && (
           <div
             style={{
-              backgroundColor: colors.accent.amberDim,
-              border: `1px solid ${colors.accent.amberDim}`,
-              borderLeft: `4px solid ${colors.accent.amber}`,
-              padding: spacing[4],
-              borderRadius: radius.md,
-              marginBottom: spacing[6],
-              color: TEXT_PRIMARY,
+            backgroundColor: colors.accent.amberDim,
+            border: `1px solid ${colors.accent.amberDim}`,
+            padding: spacing[4],
+            borderRadius: radius.md,
+            marginBottom: spacing[6],
+            color: TEXT_PRIMARY,
             }}
           >
-            <strong style={{ color: colors.accent.amber }}>⚠️ Sesión no detectada:</strong>{" "}
+            <strong style={{ color: colors.accent.amber }}>Sesión no detectada:</strong>{" "}
             Debido a las políticas de seguridad (RLS), es posible que no veas datos hasta que inicies sesión con una cuenta autorizada para este tenant.
           </div>
         )}
@@ -452,7 +452,7 @@ export default function AnalyticsPage() {
             marginBottom: "2rem",
           }}
         >
-          <ChartContainer title="💹 Tendencia de Ventas Diarias">
+          <ChartContainer title="Tendencia de Ventas Diarias">
             {!data || data.daily_sales.length === 0 ? (
               <EmptyChartMsg />
             ) : (
@@ -461,7 +461,7 @@ export default function AnalyticsPage() {
                   data={data.daily_sales.slice()}
                   margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                   <XAxis
                     dataKey="date"
                     stroke={TEXT_SECONDARY}
@@ -498,7 +498,7 @@ export default function AnalyticsPage() {
           </ChartContainer>
 
           {/* Top Items */}
-          <ChartContainer title="🏆 Items más Vendidos (Cantidades)">
+          <ChartContainer title="Items más Vendidos (Cantidades)">
             {!data || data.top_items.length === 0 ? (
               <EmptyChartMsg />
             ) : (
@@ -507,7 +507,7 @@ export default function AnalyticsPage() {
                   data={data.top_items.slice()}
                   margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                   <XAxis
                     dataKey="name"
                     stroke={TEXT_SECONDARY}
@@ -534,7 +534,7 @@ export default function AnalyticsPage() {
 
         {/* Revenue by Type */}
         <ChartContainer
-          title="🍕 Revenue por Categoría (Producto vs Servicio)"
+          title="Revenue por Categoría (Producto vs Servicio)"
           style={{ maxWidth: "500px" }}
         >
           {!data || data.revenue_by_category.length === 0 ? (
@@ -551,7 +551,7 @@ export default function AnalyticsPage() {
                     `${name === "product" ? "Productos" : "Servicios"}: S/ ${(value / 100).toFixed(0)}`
                   }
                   outerRadius={100}
-                  fill="#8884d8"
+                  fill={ACCENT}
                   dataKey="value"
                 >
                   {data.revenue_by_category.map((_: any, index: number) => (
@@ -583,14 +583,13 @@ export default function AnalyticsPage() {
             marginTop: "2rem",
             padding: "1rem",
             backgroundColor: SURFACE,
-            borderLeft: `3px solid ${ACCENT}`,
-            borderRadius: "4px",
+            border: "1px solid var(--border-color)",
+            borderRadius: "8px",
             color: TEXT_SECONDARY,
             fontSize: "14px",
           }}
         >
-          📌 Datos consolidados de Supabase. Los ingresos se muestran en Soles
-          (S/).
+          Datos consolidados de Supabase. Los ingresos se muestran en Soles (S/).
         </div>
       </div>
     </ErrorBoundary>
@@ -605,7 +604,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
         backgroundColor: SURFACE,
         padding: "1.5rem",
         borderRadius: "8px",
-        border: `1px solid #333`,
+        border: `1px solid var(--border-color)`,
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
@@ -642,7 +641,7 @@ function ChartContainer({
         backgroundColor: SURFACE,
         padding: "1.5rem",
         borderRadius: "8px",
-        border: `1px solid #333`,
+        border: `1px solid var(--border-color)`,
         ...style,
       }}
     >

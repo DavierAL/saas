@@ -6,6 +6,7 @@ import { useTenantId } from "../hooks/useTenantId";
 import { useOrders } from "../hooks/useOrders";
 import { OrdersTable } from "../components/orders";
 import { OrderDetailDrawer } from "../components/OrderDetailDrawer";
+import { ErrorBanner } from "../components/ErrorBanner";
 
 export function OrdersPage() {
   const { tenantId, loading: tenantLoading } = useTenantId();
@@ -36,13 +37,10 @@ export function OrdersPage() {
   return (
     <div style={styles.page}>
       {error && (
-        <div style={styles.errorBanner}>
-          {error}
-          <button onClick={clearError} style={styles.errorBtn}>Dismiss</button>
-        </div>
+        <ErrorBanner message={error} onDismiss={clearError} />
       )}
 
-      <h1 style={styles.title}>🧾 Órdenes</h1>
+      <h1 style={styles.title}>Órdenes</h1>
 
       <OrdersTable
         orders={orders}
@@ -79,16 +77,4 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: "center",
   },
   title: { marginTop: 0, marginBottom: "1.5rem", fontSize: "var(--font-size-6xl)", fontWeight: "var(--font-weight-bold)" },
-  errorBanner: {
-    padding: "1rem",
-    backgroundColor: "#7F1D1D",
-    border: "1px solid #EF4444",
-    borderRadius: "4px",
-    marginBottom: "1rem",
-    color: "#FCA5A5",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  errorBtn: { background: "none", border: "none", color: "#FCA5A5", cursor: "pointer", textDecoration: "underline" },
 };

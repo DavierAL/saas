@@ -84,9 +84,8 @@ export function CustomersPage() {
         <div style={s.loading}>Cargando...</div>
       ) : customers.length === 0 ? (
         <div style={s.empty}>
-          <span style={s.emptyIcon}>👥</span>
           <p>No hay clientes registrados</p>
-          <p style={s.emptySub}>Agrega clientes para gestionar tu barbería</p>
+          <p style={s.emptySub}>Agrega clientes para gestionar tu negocio</p>
         </div>
       ) : (
         <div style={s.grid}>
@@ -100,9 +99,9 @@ export function CustomersPage() {
                 </div>
               </div>
               <div style={s.cardInfo}>
-                {customer.phone && <p>📱 {customer.phone}</p>}
-                {customer.email && <p>📧 {customer.email}</p>}
-                {customer.notes && <p style={s.notes}>📝 {customer.notes}</p>}
+                {customer.phone && <p>{customer.phone}</p>}
+                {customer.email && <p>{customer.email}</p>}
+                {customer.notes && <p style={s.notes}>{customer.notes}</p>}
               </div>
               <div style={s.cardActions}>
                 <button style={s.editBtn} onClick={() => handleEdit(customer)}>Editar</button>
@@ -152,7 +151,6 @@ const s: Record<string, React.CSSProperties> = {
   addButton: { backgroundColor: "#3ECF8E", color: "#000", border: "none", padding: "10px 16px", borderRadius: 8, fontWeight: 600, cursor: "pointer" },
   loading: { textAlign: "center", padding: 40, color: "var(--text-muted)" },
   empty: { textAlign: "center", padding: 60, color: "var(--text-muted)" },
-  emptyIcon: { fontSize: 48, display: "block", marginBottom: 16 },
   emptySub: { fontSize: 14 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 },
   card: { backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: 12, padding: 16 },

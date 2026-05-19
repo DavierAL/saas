@@ -5,6 +5,7 @@ import { useTenantId } from "../hooks/useTenantId";
 import { useTenant } from "../hooks/useTenant";
 import { useInventory } from "../hooks/useInventory";
 import { InventoryTable } from "../components/inventory";
+import { PageIcon } from "../components/PageIcon";
 
 export default function InventoryPage() {
   const { tenantId, loading: tenantLoading } = useTenantId();
@@ -43,7 +44,7 @@ export default function InventoryPage() {
 
       <header style={s.header}>
         <div>
-          <h1 style={s.title}>📦 Inventario</h1>
+          <h1 style={s.title}><PageIcon name="inventory" />Inventario</h1>
           <p style={s.subtitle}>{tenant?.name || 'Mi negocio'} · {stats.totalItems} items</p>
         </div>
         <button style={s.addBtn}>
@@ -53,38 +54,25 @@ export default function InventoryPage() {
 
       <div style={s.statsGrid}>
         <div style={s.statCard}>
-          <div style={s.statIcon}>📦</div>
-          <div>
-            <div style={s.statLabel}>Productos</div>
-            <div style={s.statValue}>{stats.totalProducts}</div>
-          </div>
+          <div style={s.statValue}>{stats.totalProducts}</div>
+          <div style={s.statLabel}>Productos</div>
         </div>
         <div style={s.statCard}>
-          <div style={s.statIcon}>✂️</div>
-          <div>
-            <div style={s.statLabel}>Servicios</div>
-            <div style={{ ...s.statValue, color: '#818CF8' }}>{stats.totalServices}</div>
-          </div>
+          <div style={{ ...s.statValue, color: '#818CF8' }}>{stats.totalServices}</div>
+          <div style={s.statLabel}>Servicios</div>
         </div>
         <div style={s.statCard}>
-          <div style={s.statIcon}>⚠️</div>
-          <div>
-            <div style={s.statLabel}>Stock Bajo</div>
-            <div style={{ ...s.statValue, color: '#F59E0B' }}>{lowStockItems.length}</div>
-          </div>
+          <div style={{ ...s.statValue, color: '#F59E0B' }}>{lowStockItems.length}</div>
+          <div style={s.statLabel}>Stock Bajo</div>
         </div>
         <div style={s.statCard}>
-          <div style={s.statIcon}>❌</div>
-          <div>
-            <div style={s.statLabel}>Sin Stock</div>
-            <div style={{ ...s.statValue, color: '#EF4444' }}>{stats.outOfStock}</div>
-          </div>
+          <div style={{ ...s.statValue, color: '#EF4444' }}>{stats.outOfStock}</div>
+          <div style={s.statLabel}>Sin Stock</div>
         </div>
       </div>
 
       {allAreServices ? (
         <div style={s.noticeBox}>
-          <span style={s.noticeIcon}>ℹ️</span>
           <span>Modo Servicios: Los campos de inventario están ocultos</span>
         </div>
       ) : null}
@@ -99,8 +87,8 @@ export default function InventoryPage() {
       {lowStockItems.length > 0 && !allAreServices && (
         <section style={s.section}>
           <h2 style={s.alertsTitle}>
-            <span style={s.alertsIcon}>⚠️</span>
-            Alertas de Stock
+          <PageIcon name="stockAlert" />
+          Alertas de Stock
           </h2>
           <div style={s.alertsGrid}>
             {lowStockItems.slice(0, 6).map(item => (
@@ -190,11 +178,8 @@ const s: Record<string, CSSProperties> = {
     borderRadius: 10,
     padding: '18px 20px',
     display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-  },
-  statIcon: {
-    fontSize: 24,
+    flexDirection: 'column',
+    gap: 4,
   },
   statLabel: {
     fontSize: 12,
@@ -221,9 +206,6 @@ const s: Record<string, CSSProperties> = {
     fontSize: 14,
     color: 'var(--accent-color)',
   },
-  noticeIcon: {
-    fontSize: 16,
-  },
   section: {
     marginBottom: 28,
   },
@@ -241,9 +223,6 @@ const s: Record<string, CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-  },
-  alertsIcon: {
-    fontSize: 18,
   },
   alertsGrid: {
     display: 'grid',

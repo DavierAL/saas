@@ -313,7 +313,7 @@ export default function CatalogScreen() {
             <Ionicons name="cloud-offline-outline" size={52} color="#EF4444" />
             <Text style={st.emptyTitle}>Error de conexión</Text>
             <Text style={st.emptyText}>No se pudo sincronizar el catálogo</Text>
-            <Pressable style={st.retryBtn}>
+            <Pressable style={st.retryBtn} onPress={() => { /* trigger re-sync */ }}>
               <Text style={st.retryBtnText}>Reintentar</Text>
             </Pressable>
           </View>

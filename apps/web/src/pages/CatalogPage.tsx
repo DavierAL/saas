@@ -5,6 +5,7 @@ import type { Item } from "@saas-pos/domain";
 import { useTenantId } from "../hooks/useTenantId";
 import { useCatalog, type ItemFormData } from "../hooks/useCatalog";
 import { CatalogHeader, CatalogTable, ItemModal, DeleteModal } from "../components/catalog";
+import { ErrorBanner } from "../components/ErrorBanner";
 
 export function CatalogPage() {
   const { tenantId, loading: tenantLoading } = useTenantId();
@@ -42,10 +43,7 @@ export function CatalogPage() {
   return (
     <div style={styles.page}>
       {error && (
-        <div style={styles.errorBanner}>
-          {error}
-          <button onClick={clearError} style={styles.errorBtn}>Dismiss</button>
-        </div>
+        <ErrorBanner message={error} onDismiss={clearError} />
       )}
 
       <CatalogHeader items={items} onCreateClick={() => setIsCreateModalOpen(true)} />
@@ -81,22 +79,4 @@ export function CatalogPage() {
 const styles: Record<string, CSSProperties> = {
   page: { padding: "32px 40px", maxWidth: 1100 },
   loading: { textAlign: "center", padding: "48px 0", color: "#555" },
-  errorBanner: {
-    padding: "1rem",
-    backgroundColor: "#7F1D1D",
-    border: "1px solid #EF4444",
-    borderRadius: "4px",
-    marginBottom: "1rem",
-    color: "#FCA5A5",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  errorBtn: {
-    background: "none",
-    border: "none",
-    color: "#FCA5A5",
-    cursor: "pointer",
-    textDecoration: "underline",
-  },
 };

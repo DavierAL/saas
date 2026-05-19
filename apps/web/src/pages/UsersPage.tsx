@@ -6,6 +6,7 @@ import { useTenantId } from "../hooks/useTenantId";
 import { useUsers } from "../hooks/useUsers";
 import { UserTable, UserModal } from "../components/users";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { ErrorBanner } from "../components/ErrorBanner";
 
 export default function UsersPage() {
   const { tenantId, loading: tenantLoading } = useTenantId();
@@ -44,14 +45,11 @@ export default function UsersPage() {
     <ErrorBoundary>
       <div style={styles.page}>
         {error && (
-          <div style={styles.errorBanner}>
-            {error}
-            <button onClick={clearError} style={styles.errorBtn}>Dismiss</button>
-          </div>
+          <ErrorBanner message={error} onDismiss={clearError} />
         )}
 
         <div style={styles.header}>
-          <h1 style={styles.title}>👥 Usuarios</h1>
+          <h1 style={styles.title}>Usuarios</h1>
           <button style={styles.addBtn} onClick={() => { setEditingUser(null); setIsModalOpen(true); }}>
             + Agregar Usuario
           </button>
@@ -68,6 +66,7 @@ export default function UsersPage() {
             <option value="admin">Administrador</option>
             <option value="cashier">Cajero</option>
             <option value="waiter">Mesero</option>
+            <option value="barber">Barbero</option>
           </select>
         </div>
 
@@ -138,23 +137,5 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--text-primary)",
     border: "1px solid var(--border-color)",
     borderRadius: "4px",
-  },
-  errorBanner: {
-    padding: "1rem",
-    backgroundColor: "#7F1D1D",
-    border: "1px solid #EF4444",
-    borderRadius: "4px",
-    marginBottom: "1rem",
-    color: "#FCA5A5",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  errorBtn: {
-    background: "none",
-    border: "none",
-    color: "#FCA5A5",
-    cursor: "pointer",
-    textDecoration: "underline",
   },
 };

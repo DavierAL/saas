@@ -152,7 +152,7 @@ export default function CashClosingPage() {
         </table>
       </div>
 
-      <button onClick={handleExport} style={s.exportBtn}>📥 Exportar CSV</button>
+      <button onClick={handleExport} style={s.exportBtn}>Exportar CSV</button>
     </div>
   );
 }

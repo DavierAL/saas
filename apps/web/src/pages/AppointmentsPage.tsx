@@ -178,12 +178,13 @@ export default function AppointmentsPage() {
                         : appt.status === "cancelled"
                         ? "var(--bg-elevated)"
                         : "var(--accent-bg)",
-                    borderLeftColor:
+                    borderTopColor:
                       appt.status === "done"
                         ? "var(--success-color)"
                         : appt.status === "cancelled"
                         ? "var(--text-muted)"
                         : "var(--accent-color)",
+                    borderTopWidth: 2,
                   }}
                 >
                   <div style={s.apptClient}>
@@ -313,7 +314,7 @@ const s: Record<string, React.CSSProperties> = {
   hourRow: { display: "flex", gap: 12, minHeight: 60 },
   hourLabel: { width: 60, fontSize: 12, fontWeight: 600, color: "var(--text-muted)", paddingTop: 8 },
   hourSlots: { flex: 1, display: "flex", gap: 8, flexWrap: "wrap", backgroundColor: "var(--bg-surface)", borderRadius: 6, padding: 8, minHeight: 50 },
-  appointmentCard: { padding: "8px 12px", borderRadius: 4, borderLeft: "3px solid", width: "100%" },
+  appointmentCard: { padding: "8px 12px", borderRadius: 4, width: "100%" },
   apptClient: { fontSize: 13, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 4 },
   apptService: { fontSize: 11, color: "var(--text-secondary)", marginTop: 2 },
   apptBarber: { fontSize: 10, color: "var(--text-muted)", marginTop: 2 },

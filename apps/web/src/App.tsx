@@ -1,6 +1,5 @@
-// @ts-nocheck - TypeScript compatibility issue with react-router-dom v6 NavLink
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Routes, Route, NavLink as RouterNavLink, Navigate, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, lazy, Suspense, type CSSProperties } from 'react';
+import { Routes, Route, NavLink, Navigate, useNavigate, type NavLinkProps } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { CatalogPage } from './pages/CatalogPage';
@@ -28,28 +27,28 @@ const CustomersPage = lazy(() => import('./pages/CustomersPage'));
 type NavId = 'overview' | 'catalog' | 'orders' | 'tenants' | 'analytics' | 'inventory' | 'users' | 'subscription' | 'cash-closing' | 'stock-alerts' | 'payment-methods' | 'tables' | 'appointments' | 'customers' | 'settings';
 
 const NAV = [
-  { id: 'overview'        as NavId,   path: '/',                 icon: '◼', label: 'Overview'       },
-  { id: 'catalog'        as NavId,   path: '/catalog',          icon: '◈', label: 'Catálogo'       },
-  { id: 'orders'         as NavId,   path: '/orders',           icon: '◉', label: 'Órdenes'        },
-  { id: 'tenants'       as NavId,   path: '/tenants',          icon: '◧', label: 'Tenants'        },
-  { id: 'analytics'     as NavId,   path: '/analytics',        icon: '◫', label: 'Analytics'      },
-  { id: 'inventory'     as NavId,   path: '/inventory',       icon: '◪', label: 'Inventario'     },
-  { id: 'users'         as NavId,   path: '/users',           icon: '◔', label: 'Usuarios'       },
-  { id: 'subscription' as NavId,   path: '/subscription',   icon: '◐', label: 'Suscripción'   },
-  { id: 'cash-closing' as NavId,   path: '/cash-closing',   icon: '◑', label: 'Cierre'        },
-  { id: 'stock-alerts'  as NavId,   path: '/stock-alerts',    icon: '⚠', label: 'Stock'         },
-  { id: 'payment-methods' as NavId, path: '/payment-methods', icon: '💳', label: 'Pagos'         },
-  { id: 'tables'        as NavId,   path: '/tables',           icon: '🪑', label: 'Mesas'          },
-  { id: 'appointments' as NavId,   path: '/appointments',    icon: '📅', label: 'Citas'         },
-  { id: 'customers'    as NavId,   path: '/customers',        icon: '👥', label: 'Clientes'      },
-  { id: 'settings'      as NavId,   path: '/settings',        icon: '◬', label: 'Ajustes'       },
+  { id: 'overview'        as NavId,   path: '/',                 icon: 'Overview'       },
+  { id: 'catalog'        as NavId,   path: '/catalog',          icon: 'Catálogo'       },
+  { id: 'orders'         as NavId,   path: '/orders',           icon: 'Órdenes'        },
+  { id: 'tenants'       as NavId,   path: '/tenants',          icon: 'Tenants'        },
+  { id: 'analytics'     as NavId,   path: '/analytics',        icon: 'Analytics'      },
+  { id: 'inventory'     as NavId,   path: '/inventory',       icon: 'Inventario'     },
+  { id: 'users'         as NavId,   path: '/users',           icon: 'Usuarios'       },
+  { id: 'subscription' as NavId,   path: '/subscription',   icon: 'Suscripción'   },
+  { id: 'cash-closing' as NavId,   path: '/cash-closing',   icon: 'Cierre'        },
+  { id: 'stock-alerts'  as NavId,   path: '/stock-alerts',    icon: 'Stock'         },
+  { id: 'payment-methods' as NavId, path: '/payment-methods', icon: 'Pagos'         },
+  { id: 'tables'        as NavId,   path: '/tables',           icon: 'Mesas'          },
+  { id: 'appointments' as NavId,   path: '/appointments',    icon: 'Citas'         },
+  { id: 'customers'    as NavId,   path: '/customers',        icon: 'Clientes'      },
+  { id: 'settings'      as NavId,   path: '/settings',        icon: 'Ajustes'       },
 ];
 
 function Sidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () => void; onLogout: () => void }) {
   const { tenantId } = useTenantId();
   const { tenant } = useTenant(tenantId);
 
-  const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
+  const navLinkStyle = ({ isActive }: { isActive: boolean }): CSSProperties => ({
     ...s.navItem,
     ...(isActive ? s.navActive : {}),
   });
@@ -83,7 +82,7 @@ function Sidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () =
         </div>
         <nav style={s.nav}>
           {filteredNav.map((item) => (
-            <RouterNavLink
+            <NavLink
               key={item.id}
               to={item.path}
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -91,14 +90,12 @@ function Sidebar({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () =
               onClick={onClose}
               end
             >
-              <span style={s.navIcon}>{item.icon}</span>
-              {item.label}
-            </RouterNavLink>
+              {item.icon}
+            </NavLink>
           ))}
         </nav>
         <div style={s.sidebarBottom}>
           <button onClick={onLogout} style={s.logoutButton}>
-            <span style={s.logoutIcon}>⏻</span>
             <span>Cerrar sesión</span>
           </button>
           <div style={s.syncRow}>
@@ -285,13 +282,11 @@ const s: Record<string, React.CSSProperties> = {
   nav:          { flex: 1, padding: '8px', display: 'flex', flexDirection: 'column', gap: 2 },
   navItem:      { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
   navActive:    { backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', fontWeight: 600, border: '1px solid var(--border-color)' },
-  navIcon:      { fontSize: 11, opacity: 0.7 },
   sidebarBottom:{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' },
   syncRow:      { display: 'flex', alignItems: 'center', gap: 8 },
   syncDot:      { width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent-color)' },
   syncText:     { fontSize: 11, color: 'var(--text-muted)' },
   logoutButton: { display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 6, border: 'none', backgroundColor: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.1s' },
-  logoutIcon:   { fontSize: 12 },
   userMenuTrigger: { width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
   userAvatar:   { color: '#0f0f0f', fontWeight: 700, fontSize: 13 },
   userDropdown: { position: 'absolute', top: 48, right: 16, backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '8px 0', minWidth: 180, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100 },
